@@ -1,8 +1,9 @@
 [Unit]
-Description=Build the Perplexity Sonar container image from https://github.com/ppl-ai/modelcontextprotocol
+Description=Build the Perplexity Sonar container image from local sources
 After=network-online.target
 Wants=network-online.target
 
 [Build]
 ImageTag=localhost/perplexity-sonar:latest
-SetWorkingDirectory=https://github.com/ppl-ai/modelcontextprotocol.git#:perplexity-ask
+File=src/perplexity-ask/Dockerfile
+SetWorkingDirectory=file
