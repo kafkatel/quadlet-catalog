@@ -1,0 +1,30 @@
+# redis.container
+# Quadlet container file for Redis service
+
+[Unit]
+Description=Redis container for Firecrawl
+After=network-online.target firecrawl-network-network.service
+Wants=network-online.target firecrawl-network-network.service
+Requires=firecrawl-network-network.service
+
+[Container]
+Image=docker.io/valkey/valkey
+ContainerName=firecrawl-redis
+Network=firecrawl-network.network
+#Exec=redis-server --bind 0.0.0.0
+
+# Health check
+HealthCmd=redis-cli ping
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=5s
+
+# Resource limits
+Ulimit=nofile=65535:65535
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

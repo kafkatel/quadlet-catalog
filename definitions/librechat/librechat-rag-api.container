@@ -1,0 +1,17 @@
+[Unit]
+Description=LibreChat RAG API Container
+# Quadlet automatically translates container dependencies into service dependencies
+Requires=librechat-vectordb.container
+After=librechat-vectordb.container
+
+[Container]
+Pod=librechat.pod
+Image=ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+ContainerName=librechat-rag-api
+EnvironmentFile=/srv/containers/librechat/conf/librechat.env
+EnvironmentFile=/srv/containers/librechat/conf/postgres.env
+Environment=DB_HOST=localhost
+Environment=RAG_PORT=8000
+
+[Service]
+Restart=always

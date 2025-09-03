@@ -1,0 +1,12 @@
+[Unit]
+Description=LibreChat VectorDB Container
+
+[Container]
+Pod=librechat.pod
+Image=docker.io/ankane/pgvector:latest
+ContainerName=librechat-vectordb
+EnvironmentFile=/srv/containers/librechat/conf/postgres.env
+Volume=/srv/containers/librechat/pgvector_data:/var/lib/postgresql/data:Z
+
+[Service]
+Restart=always

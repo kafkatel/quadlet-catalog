@@ -1,0 +1,72 @@
+# firecrawl-api.container
+# Quadlet container file for Firecrawl API service
+
+[Unit]
+Description=Firecrawl API container
+After=network-online.target firecrawl-network-network.service firecrawl-redis.service firecrawl-playwright.service
+Wants=network-online.target firecrawl-network-network.service
+Requires=firecrawl-network-network.service firecrawl-redis.service firecrawl-playwright.service
+
+[Container]
+#Image=firecrawl-api.build
+Image=ghcr.io/firecrawl/playwright-service:latest
+ContainerName=firecrawl-api
+Network=firecrawl-network.network
+
+# Command override
+Exec=pnpm run start:production
+
+# Environment variables - Common environment
+Environment=REDIS_URL=redis://firecrawl-redis:6379
+Environment=REDIS_RATE_LIMIT_URL=redis://firecrawl-redis:6379
+Environment=PLAYWRIGHT_MICROSERVICE_URL=http://firecrawl-playwright:3000/scrape
+Environment=USE_DB_AUTHENTICATION=%i
+Environment=OPENAI_API_KEY=%i
+Environment=OPENAI_BASE_URL=%i
+Environment=MODEL_NAME=%i
+Environment=MODEL_EMBEDDING_NAME=%i
+Environment=OLLAMA_BASE_URL=%i
+Environment=SLACK_WEBHOOK_URL=%i
+Environment=BULL_AUTH_KEY=%i
+Environment=TEST_API_KEY=%i
+Environment=POSTHOG_API_KEY=%i
+Environment=POSTHOG_HOST=%i
+Environment=SUPABASE_ANON_TOKEN=%i
+Environment=SUPABASE_URL=%i
+Environment=SUPABASE_SERVICE_TOKEN=%i
+Environment=SELF_HOSTED_WEBHOOK_URL=%i
+Environment=SERPER_API_KEY=%i
+Environment=SEARCHAPI_API_KEY=%i
+Environment=LOGGING_LEVEL=%i
+Environment=PROXY_SERVER=%i
+Environment=PROXY_USERNAME=%i
+Environment=PROXY_PASSWORD=%i
+Environment=SEARXNG_ENDPOINT=%i
+Environment=SEARXNG_ENGINES=%i
+Environment=SEARXNG_CATEGORIES=%i
+
+# API specific environment
+Environment=HOST=0.0.0.0
+Environment=PORT=3002
+Environment=INTERNAL_PORT=3002
+Environment=FLY_PROCESS_GROUP=app
+Environment=ENV=local
+
+# Port mapping
+PublishPort=3002:3002
+
+# Add host mapping for Docker Desktop compatibility
+AddHost=host.docker.internal:host-gateway
+
+# Resource limits
+Ulimit=nofile=65535:65535
+
+# Use environment file for sensitive data (recommended)
+# EnvironmentFile=/etc/firecrawl/api.env
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

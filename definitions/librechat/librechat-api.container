@@ -1,0 +1,23 @@
+[Unit]
+Description=LibreChat API Container
+Requires=librechat-meilisearch.container librechat-mongodb.container librechat-rag-api.container librechat-valkey.container librechat-vectordb.container
+After=librechat-meilisearch.container librechat-mongodb.container librechat-rag-api.container librechat-valkey.container librechat-vectordb.container
+
+[Container]
+Pod=librechat.pod
+Image=ghcr.io/danny-avila/librechat-dev-api:latest
+ContainerName=librechat-api
+EnvironmentFile=/srv/containers/librechat/conf/librechat.env
+Environment=NODE_ENV=production
+Volume=/srv/containers/librechat/conf/librechat.yaml:/app/librechat.yaml:Z
+Volume=/srv/containers/librechat/images:/app/client/public/images:Z
+Volume=/srv/containers/librechat/uploads:/app/uploads:Z
+Volume=/srv/containers/librechat/logs:/app/api/logs:Z
+
+[Service]
+Restart=always
+
+[Install]
+# By enabling the main API service, all its dependencies (the other containers)
+# will also be started automatically.
+WantedBy=default.target

@@ -1,0 +1,16 @@
+# firecrawl-network.network
+# Quadlet network file for the backend network
+
+[Unit]
+Description=Firecrawl backend network
+After=network-online.target
+Wants=network-online.target
+
+[Network]
+NetworkName=firecrawl-backend
+Driver=bridge
+# Enable internal communication between containers
+Internal=false
+
+[Install]
+WantedBy=multi-user.target

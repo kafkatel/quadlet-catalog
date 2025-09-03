@@ -1,0 +1,36 @@
+# playwright-service.container
+# Quadlet container file for Playwright service
+
+[Unit]
+Description=Playwright service container for Firecrawl
+After=network-online.target firecrawl-network-network.service
+Wants=network-online.target firecrawl-network-network.service
+Requires=firecrawl-network-network.service
+
+[Container]
+Image=ghcr.io/firecrawl/playwright-service:latest
+ContainerName=firecrawl-playwright
+Network=firecrawl-network.network
+
+# Environment variables
+Environment=PORT=3000
+Environment=PROXY_SERVER=%i
+Environment=PROXY_USERNAME=%i
+Environment=PROXY_PASSWORD=%i
+Environment=BLOCK_MEDIA=%i
+
+# Use environment file if you prefer
+# EnvironmentFile=/etc/firecrawl/playwright.env
+
+# Port exposure (internal to network)
+ExposeHostPort=3000
+
+# Resource limits
+Ulimit=nofile=65535:65535
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

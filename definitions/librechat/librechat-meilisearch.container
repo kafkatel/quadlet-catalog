@@ -1,0 +1,14 @@
+[Unit]
+Description=LibreChat Meilisearch Container
+
+[Container]
+Pod=librechat.pod
+Image=docker.io/getmeili/meilisearch:v1.12.3
+ContainerName=librechat-meilisearch
+EnvironmentFile=/srv/containers/librechat/conf/librechat.env
+Environment=MEILI_HOST=http://localhost:7700
+Environment=MEILI_NO_ANALYTICS=true
+Volume=/srv/containers/librechat/meilisearch_data:/meili_data:Z
+
+[Service]
+Restart=always

@@ -1,0 +1,14 @@
+[Unit]
+Description=Valkey Redis Replacement
+Documentation=https://valkey.io/
+
+[Container]
+ContainerName=librechat-valkey
+Pod=librechat.pod
+Image=docker.io/valkey/valkey:latest
+Volume=/srv/containers/librechat/valkey/data:/data:Z
+Volume=/srv/containers/librechat/valkey/conf/valkey.conf:/etc/valkey.conf:Z
+Exec=/etc/valkey.conf
+
+[Service]
+Restart=always

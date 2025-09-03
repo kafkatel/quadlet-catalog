@@ -1,0 +1,12 @@
+[Unit]
+Description=LibreChat MongoDB Container
+
+[Container]
+Pod=librechat.pod
+Image=docker.io/library/mongo
+ContainerName=librechat-mongodb
+Volume=/srv/containers/librechat/mongodb_data:/data/db:Z
+Exec=mongod --noauth
+
+[Service]
+Restart=always

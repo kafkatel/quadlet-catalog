@@ -1,0 +1,14 @@
+[Unit]
+Description=Playwright MCP Server
+Documentation=https://github.com/microsoft/playwright
+
+[Container]
+ContainerName=mcp-playwright
+Pod=mcp-servers.pod
+Image=mcr.microsoft.com/playwright/mcp
+Volume=/srv/containers/%N/data:/app/output:Z
+Volume=/srv/containers/%N/conf:/home/node/.cache/ms-playwright/:Z
+Exec=--host 0.0.0.0 --port 8931 --vision --output-dir /app/output
+
+[Service]
+Restart=always

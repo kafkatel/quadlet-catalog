@@ -1,0 +1,13 @@
+[Unit]
+Description=Pod for the LibreChat Application Stack
+Wants=network-online.target
+After=network-online.target
+
+[Pod]
+# The API service is the only one that exposes a port, so we publish it on the pod.
+PublishPort=3080:3080
+AddHost=host.docker.internal:host-gateway
+
+[Install]
+# When this pod is enabled, it will be started on boot.
+WantedBy=default.target
