@@ -1,0 +1,12 @@
+[Unit]
+Description=Perplexity Sonar MCP Server
+After=perplexity-sonar.build
+Requires=perplexity-sonar.build
+
+[Container]
+Image=perplexity-sonar.build
+Pod=perplexity-sonar.pod
+EnvironmentFile=./perplexity-sonar.env
+
+[Install]
+WantedBy=multi-user.target

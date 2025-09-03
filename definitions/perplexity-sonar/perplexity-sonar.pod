@@ -1,0 +1,7 @@
+[Unit]
+Description=Pod for Perplexity Sonar
+After=perplexity-sonar.network
+Requires=perplexity-sonar.network
+
+[Pod]
+Network=perplexity-sonar.network
