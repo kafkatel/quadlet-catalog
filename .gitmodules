@@ -1,0 +1,3 @@
+[submodule "definitions/perplexity-sonar/src"]
+	path = definitions/perplexity-sonar/src
+	url = https://github.com/ppl-ai/modelcontextprotocol.git
