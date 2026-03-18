@@ -1,0 +1,31 @@
+# quay-clair.container
+# Quadlet container file for Clair v4 vulnerability scanner
+
+[Unit]
+Description=Clair v4 vulnerability scanner for Quay
+Documentation=https://quay.github.io/clair/
+After=network-online.target quay-network-network.service quay-clair-postgres.service quay.service
+Wants=network-online.target
+Requires=quay-network-network.service quay-clair-postgres.service
+
+[Container]
+Image=quay.io/projectquay/clair:4.4.1
+ContainerName=quay-clair
+Network=quay-network.network
+
+# Clair runs all components in a single process
+Environment=CLAIR_MODE=combo
+Environment=CLAIR_CONF=/clair/config.yaml
+
+# Clair reads its config from /clair/config.yaml
+Volume=/srv/containers/quay/clair-config:/clair:Z
+
+# Clair matcher can be CPU-intensive during vulnerability updates
+PodmanArgs=--cpus=2
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

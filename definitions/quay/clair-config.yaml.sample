@@ -1,0 +1,32 @@
+# Clair v4 config.yaml (combo mode)
+# Copy this file to your Clair config volume and edit before starting.
+# See https://quay.github.io/clair/reference/config.html for all options.
+
+http_listen_addr: 0.0.0.0:8080
+introspection_addr: 0.0.0.0:8089
+log_level: info
+
+indexer:
+  # Container name "quay-clair-postgres" resolves via the quay-backend network.
+  # The password here must match POSTGRES_PASSWORD in quay.env.
+  connstring: host=quay-clair-postgres port=5432 dbname=clair user=clair password=CHANGEME sslmode=disable
+  scanlock_retry: 10
+  layer_scan_concurrency: 5
+  migrations: true
+
+matcher:
+  connstring: host=quay-clair-postgres port=5432 dbname=clair user=clair password=CHANGEME sslmode=disable
+  migrations: true
+
+notifier:
+  connstring: host=quay-clair-postgres port=5432 dbname=clair user=clair password=CHANGEME sslmode=disable
+  migrations: true
+  poll_interval: 5m
+  delivery_interval: 1m
+
+auth:
+  psk:
+    # Must match SECURITY_SCANNER_V4_PSK in Quay's config.yaml.
+    key: GENERATE-A-PSK-HERE
+    iss:
+      - quay

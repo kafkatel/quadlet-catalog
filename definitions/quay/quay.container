@@ -1,0 +1,26 @@
+# quay.container
+# Quadlet container file for the Quay registry application
+
+[Unit]
+Description=Quay container registry
+Documentation=https://docs.projectquay.io/
+After=network-online.target quay-postgres.service quay-redis.service
+Wants=network-online.target
+Requires=quay-postgres.service quay-redis.service
+
+[Container]
+Image=quay.io/projectquay/quay:latest
+ContainerName=quay
+Pod=quay.pod
+
+# Quay reads its config from /conf/stack/config.yaml
+Volume=/srv/containers/quay/config:/conf/stack:Z
+# Registry image storage
+Volume=quay-storage.volume:/datastorage:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

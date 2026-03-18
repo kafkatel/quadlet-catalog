@@ -1,0 +1,26 @@
+# quay-mirror.container
+# Quadlet container file for Quay repository mirroring worker
+
+[Unit]
+Description=Quay repository mirroring worker
+After=network-online.target quay-postgres.service quay-redis.service quay.service
+Wants=network-online.target
+Requires=quay-postgres.service quay-redis.service quay.service
+
+[Container]
+Image=quay.io/projectquay/quay:latest
+ContainerName=quay-mirror
+Pod=quay.pod
+
+# Run the Quay image in mirroring mode
+Exec=repomirror
+
+# Shares the same config as the main Quay container
+Volume=/srv/containers/quay/config:/conf/stack:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,66 @@
+# Quay config.yaml
+# Copy this file to your config volume and edit before starting Quay.
+# See https://docs.projectquay.io/config_quay.html for all options.
+
+# Hostname (no scheme, no port)
+SERVER_HOSTNAME: quay.example.com
+
+# Marks this config as complete (required)
+SETUP_COMPLETE: true
+
+# Database connection
+# Container name "quay-postgres" resolves via the quay-backend network.
+# The password here must match POSTGRES_PASSWORD in quay.env.
+DB_URI: postgresql://quay:CHANGEME@quay-postgres:5432/quay
+
+# Key used to encrypt sensitive fields in the database.
+# Generate with: python3 -c "import uuid; print(uuid.uuid4())"
+DATABASE_SECRET_KEY: GENERATE-A-UUID-HERE
+
+# Secret key for session cookies and CSRF tokens.
+# Generate with: python3 -c "import uuid; print(uuid.uuid4())"
+SECRET_KEY: GENERATE-A-UUID-HERE
+
+# Redis for build logs
+BUILDLOGS_REDIS:
+  host: quay-redis
+  port: 6379
+
+# Redis for user events
+USER_EVENTS_REDIS:
+  host: quay-redis
+  port: 6379
+
+# Image storage - local filesystem backed by the quay-storage volume.
+# For production, consider S3, GCS, Swift, or Ceph.
+DISTRIBUTED_STORAGE_CONFIG:
+  default:
+    - LocalStorage
+    - storage_path: /datastorage/registry
+DISTRIBUTED_STORAGE_DEFAULT_LOCATIONS: []
+DISTRIBUTED_STORAGE_PREFERENCE:
+  - default
+
+# Clair v4 vulnerability scanning
+FEATURE_SECURITY_SCANNER: true
+# Container name "quay-clair" resolves via the quay-backend network.
+SECURITY_SCANNER_V4_ENDPOINT: http://quay-clair:8080
+# Must match the key in clair-config.yaml.
+# Generate with: python3 -c "import secrets; print(secrets.token_hex(32))"
+SECURITY_SCANNER_V4_PSK: GENERATE-A-PSK-HERE
+
+# Repository mirroring
+FEATURE_REPO_MIRROR: true
+REPO_MIRROR_INTERVAL: 30
+REPO_MIRROR_TLS_VERIFY: true
+
+# Disable email (set to true and configure SMTP for production)
+FEATURE_MAILING: false
+
+# Optional superuser account
+# SUPER_USERS:
+#   - quayadmin
+
+# URL scheme. Use "https" with TLS certificates in /conf/stack (ssl.cert, ssl.key).
+# Use "http" with EXTERNAL_TLS_TERMINATION if TLS is handled by a reverse proxy.
+PREFERRED_URL_SCHEME: https
