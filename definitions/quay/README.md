@@ -56,7 +56,7 @@ sudo cp clair-config.yaml.sample /srv/containers/quay/clair-config/config.yaml
 Set the generated secrets in all three files. `PG_PASSWORD` is shared -- it must be the same value in all three places:
 
 - `quay.env` - Set `POSTGRES_PASSWORD` to `PG_PASSWORD`
-- `/srv/containers/quay/config/config.yaml` - Replace `CHANGEME` in `DB_URI` with `PG_PASSWORD`, set `DATABASE_SECRET_KEY` to `DB_SECRET`, `SECRET_KEY` to `SESSION_KEY`, `SECURITY_SCANNER_V4_PSK` to `PSK`, and `SERVER_HOSTNAME` to your FQDN
+- `/srv/containers/quay/config/config.yaml` - Replace `CHANGEME` in `DB_URI` with `PG_PASSWORD`, set `DATABASE_SECRET_KEY` to `DB_SECRET`, `SECRET_KEY` to `SESSION_KEY`, `SECURITY_SCANNER_V4_PSK` to `PSK`, and `SERVER_HOSTNAME` to your FQDN. If Quay is running on a non-standard port, include the port in `SERVER_HOSTNAME` (e.g., `quay.example.com:8080`) -- Quay uses this value for authentication redirect URLs, and clients will fail to push if it doesn't match the address they connect to
 - `/srv/containers/quay/clair-config/config.yaml` - Replace `CHANGEME` in all three `connstring` values with `PG_PASSWORD`, and set `auth.psk.key` to `PSK`
 
 The PSK value must match between Quay's `SECURITY_SCANNER_V4_PSK` and Clair's `auth.psk.key`.
@@ -70,20 +70,25 @@ EXTERNAL_TLS_TERMINATION: true
 
 ### 3. Install Quadlet Files
 
-For system-level deployment:
+Using `podman quadlet install` (Podman 5.0+):
 
 ```bash
-sudo cp *.pod *.container *.network *.volume /etc/containers/systemd/
-sudo cp quay.env /etc/containers/systemd/
-sudo systemctl daemon-reload
+podman quadlet install *.pod *.container *.network *.volume quay.env
 ```
 
-For user-level deployment:
+This copies the files to `~/.config/containers/systemd/` and reloads systemd automatically. To update an existing installation, add `--replace`.
+
+Alternatively, copy the files manually:
 
 ```bash
+# User-level
 mkdir -p ~/.config/containers/systemd
 cp *.pod *.container *.network *.volume quay.env ~/.config/containers/systemd/
 systemctl --user daemon-reload
+
+# System-level
+sudo cp *.pod *.container *.network *.volume quay.env /etc/containers/systemd/
+sudo systemctl daemon-reload
 ```
 
 ### 4. Start the Stack
@@ -117,6 +122,24 @@ On subsequent startups (after the initial migration), starting `quay.service` is
 systemctl --user start quay.service
 ```
 
+**Restarting after configuration changes:** `systemctl restart quay.service` can fail because it attempts to restart the entire dependency chain (pod, postgres, redis), which races with container cleanup. Instead, stop and start separately:
+
+```bash
+systemctl --user stop quay.service
+systemctl --user start quay.service
+```
+
+If that still fails due to dependency state, reset and restart the full stack:
+
+```bash
+systemctl --user stop quay-mirror.service quay-clair.service quay.service
+systemctl --user stop quay-redis.service quay-clair-postgres.service quay-postgres.service quay-pod.service
+systemctl --user reset-failed
+systemctl --user start quay.service
+systemctl --user start quay-clair-postgres.service
+systemctl --user start quay-clair.service quay-mirror.service
+```
+
 ### 5. Verify
 
 ```bash
@@ -127,7 +150,30 @@ podman ps --filter name=quay
 curl http://localhost:8080/health/instance
 ```
 
-All health services should report `true`. Access the web UI at `http://localhost:8080` (or `https://localhost:8443` if TLS certificates are configured). On first access, create an initial user account.
+All health services should report `true`. Access the web UI at `http://localhost:8080` (or `https://localhost:8443` if TLS certificates are configured). On first access, create an initial user account. Robot accounts for CI/push access can be created under User Settings or Organization settings in the web UI.
+
+## Client Configuration
+
+Podman defaults to HTTPS when communicating with registries. If Quay is running without TLS (using `EXTERNAL_TLS_TERMINATION: true`), clients must be configured to allow HTTP.
+
+**Per-command** (for quick testing):
+
+```bash
+podman login --tls-verify=false quay.example.com:8080
+podman push --tls-verify=false quay.example.com:8080/org/image:tag
+```
+
+**Persistent** (recommended -- add to each client machine):
+
+```ini
+# ~/.config/containers/registries.conf (user-level)
+# or /etc/containers/registries.conf.d/quay.conf (system-level)
+[[registry]]
+location = "quay.example.com:8080"
+insecure = true
+```
+
+After this, `podman login`, `push`, and `pull` will use HTTP without requiring `--tls-verify=false`.
 
 ## Port Configuration
 

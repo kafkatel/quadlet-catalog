@@ -2,7 +2,10 @@
 # Copy this file to your config volume and edit before starting Quay.
 # See https://docs.projectquay.io/config_quay.html for all options.
 
-# Hostname (no scheme, no port)
+# Hostname that clients use to reach this registry (no scheme).
+# Include the port if running on a non-standard port (e.g., quay.example.com:8080).
+# Quay uses this for authentication redirect URLs -- pushes will fail if it
+# doesn't match the address clients connect to.
 SERVER_HOSTNAME: quay.example.com
 
 # Marks this config as complete (required)
