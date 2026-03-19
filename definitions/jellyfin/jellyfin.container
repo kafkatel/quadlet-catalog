@@ -1,0 +1,51 @@
+# jellyfin.container
+# Quadlet container file for Jellyfin Media Server
+
+[Unit]
+Description=Jellyfin Media Server
+Documentation=https://jellyfin.org/docs/
+
+[Container]
+Image=docker.io/jellyfin/jellyfin
+ContainerName=jellyfin
+
+# Host networking for DLNA discovery and client auto-detection.
+# Change to Network=bridge with PublishPort=8096:8096/tcp if you
+# only need web/app access and don't need local network discovery.
+Network=host
+
+# Configuration and cache
+Volume=/srv/containers/jellyfin/config:/config:Z
+Volume=/srv/containers/jellyfin/cache:/cache:Z
+
+# --- Media libraries ---
+# Map each host media directory to a path inside the container.
+# Add one Volume line per library. The container path (right side)
+# is what you select when creating libraries in the Jellyfin web UI.
+#
+# Examples:
+#   Volume=/home/user/Videos:/media/videos:Z
+#   Volume=/home/user/Music:/media/music:Z
+#   Volume=/mnt/nas/movies:/media/movies:Z,ro
+#   Volume=/run/media/user/external-drive/tv:/media/tv:Z,ro
+#
+# Use :Z,ro (read-only) for media you don't want Jellyfin to modify.
+# Use :z (lowercase, shared) instead of :Z if multiple containers
+# need to access the same media path (e.g., Jellyfin + Plex).
+Volume=/srv/containers/jellyfin/media:/media:Z
+
+# --- GPU hardware transcoding (optional) ---
+# Uncomment ONE of the following lines for hardware-accelerated transcoding.
+#
+# NVIDIA (requires nvidia-container-toolkit):
+#AddDevice=nvidia.com/gpu=all
+#
+# Intel Quick Sync / AMD VA-API:
+#AddDevice=/dev/dri:/dev/dri
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,60 @@
+# plex.container
+# Quadlet container file for Plex Media Server
+
+[Unit]
+Description=Plex Media Server
+Documentation=https://support.plex.tv/
+
+[Container]
+Image=docker.io/plexinc/pms-docker
+ContainerName=plex
+
+# Host networking for DLNA, GDM discovery, and Plex Companion.
+# Change to Network=bridge with PublishPort=32400:32400/tcp if you
+# only need web/app access and don't need local network discovery.
+Network=host
+
+# Timezone (used for scheduled tasks and library scan times)
+Environment=TZ=Etc/UTC
+
+# Claim token for linking to your Plex account on first run.
+# Generate at https://plex.tv/claim -- tokens expire after 4 minutes.
+# Remove or leave empty after initial setup.
+#Environment=PLEX_CLAIM=claim-xxxxxxxxxxxxxxxxxxxx
+
+# Configuration and transcoding
+Volume=/srv/containers/plex/config:/config:Z
+Volume=/srv/containers/plex/transcode:/transcode:Z
+
+# --- Media libraries ---
+# Map each host media directory to a path inside the container.
+# Add one Volume line per library. The container path (right side)
+# is what you select when creating libraries in the Plex web UI.
+#
+# Examples:
+#   Volume=/home/user/Videos:/media/videos:Z
+#   Volume=/home/user/Music:/media/music:Z
+#   Volume=/mnt/nas/movies:/media/movies:Z,ro
+#   Volume=/run/media/user/external-drive/tv:/media/tv:Z,ro
+#
+# Use :Z,ro (read-only) for media you don't want Plex to modify.
+# Use :z (lowercase, shared) instead of :Z if multiple containers
+# need to access the same media path (e.g., Plex + Jellyfin).
+Volume=/srv/containers/plex/media:/media:Z
+
+# --- GPU hardware transcoding (optional) ---
+# Uncomment ONE of the following lines for hardware-accelerated transcoding.
+# Requires a Plex Pass subscription.
+#
+# NVIDIA (requires nvidia-container-toolkit):
+#AddDevice=nvidia.com/gpu=all
+#
+# Intel Quick Sync / AMD VA-API:
+#AddDevice=/dev/dri:/dev/dri
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

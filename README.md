@@ -7,9 +7,11 @@ A collection of [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podma
 | Definition | Description | Components | Architecture |
 |------------|-------------|------------|--------------|
 | [firecrawl](definitions/firecrawl/) | Web scraping API with Playwright-based rendering | API, Worker, Playwright, Redis | Pod + Network |
+| [jellyfin](definitions/jellyfin/) | Free open-source media server | Jellyfin server | Standalone container |
 | [librechat](definitions/librechat/) | Self-hosted AI chat platform with RAG support | API, RAG API, MongoDB, Meilisearch, Valkey, PGVector | Pod |
 | [mcp-playwright](definitions/mcp-playwright/) | Microsoft Playwright MCP server | Playwright server | Standalone container |
 | [perplexity-sonar](definitions/perplexity-sonar/) | Perplexity Sonar API MCP server (local build) | MCP server | Pod + Network + Build |
+| [plex](definitions/plex/) | Plex Media Server | Plex server | Standalone container |
 | [quay](definitions/quay/) | Container image registry with vulnerability scanning | Registry, Mirror, Clair, PostgreSQL (x2), Redis | Pod + Network |
 
 ### Placeholder Definitions
@@ -76,7 +78,9 @@ sudo restorecon -Rv /srv/containers/
 
 ```bash
 cd definitions/{appname}/
-podman quadlet install *.pod *.container *.network *.volume *.env 2>/dev/null; true
+podman quadlet install *.container
+# Include additional file types as needed:
+# podman quadlet install *.pod *.container *.network *.volume *.env
 ```
 
 This copies the files to `~/.config/containers/systemd/` and reloads systemd automatically. Add `--replace` to update an existing installation.
@@ -86,15 +90,18 @@ This copies the files to `~/.config/containers/systemd/` and reloads systemd aut
 ```bash
 # User-level (rootless)
 mkdir -p ~/.config/containers/systemd
-cp definitions/{appname}/*.pod definitions/{appname}/*.container \
-   definitions/{appname}/*.network definitions/{appname}/*.volume \
-   definitions/{appname}/*.env ~/.config/containers/systemd/ 2>/dev/null; true
+cp definitions/{appname}/*.container ~/.config/containers/systemd/
+# Copy additional file types that exist in the definition:
+# cp definitions/{appname}/*.pod definitions/{appname}/*.network \
+#    definitions/{appname}/*.volume definitions/{appname}/*.env \
+#    ~/.config/containers/systemd/
 systemctl --user daemon-reload
 
 # System-level (root)
-sudo cp definitions/{appname}/*.pod definitions/{appname}/*.container \
-   definitions/{appname}/*.network definitions/{appname}/*.volume \
-   definitions/{appname}/*.env /etc/containers/systemd/ 2>/dev/null; true
+sudo cp definitions/{appname}/*.container /etc/containers/systemd/
+# sudo cp definitions/{appname}/*.pod definitions/{appname}/*.network \
+#        definitions/{appname}/*.volume definitions/{appname}/*.env \
+#        /etc/containers/systemd/
 sudo systemctl daemon-reload
 ```
 
@@ -128,9 +135,11 @@ quadlet-catalog/
 ├── README.md                  # This file
 ├── definitions/               # All application definitions
 │   ├── firecrawl/             # Web scraping API stack
+│   ├── jellyfin/              # Jellyfin media server
 │   ├── librechat/             # AI chat platform stack
 │   ├── mcp-playwright/        # Playwright MCP server
 │   ├── perplexity-sonar/      # Perplexity Sonar MCP server
+│   ├── plex/                  # Plex Media Server
 │   ├── quay/                  # Container registry stack
 │   ├── codejail/              # (planned) Code sandbox
 │   ├── mcp-context7/          # (planned) Context7 MCP server
