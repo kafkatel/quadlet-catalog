@@ -1,0 +1,29 @@
+# mcp-context7.container
+# Context7 MCP Server -- provides up-to-date library documentation to AI agents.
+#
+# This is the canonical "system-level" definition. It runs as a
+# standalone container or can be added to a shared MCP pod by
+# uncommenting the Pod= line below.
+
+[Unit]
+Description=Context7 MCP Server
+Documentation=https://github.com/upstash/context7
+
+[Container]
+Image=docker.io/mcp/context7:latest
+ContainerName=mcp-context7
+
+# To join a shared MCP servers pod (like mcp-playwright), uncomment:
+#Pod=mcp-servers.pod
+
+# Stdio is the default transport (for direct integration with MCP clients).
+# For network-accessible SSE transport, override the entrypoint:
+#Exec=--transport sse --port 3000
+#PublishPort=3000:3000
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
