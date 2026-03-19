@@ -1,0 +1,40 @@
+# valkey.container
+# Standalone Valkey (Redis-compatible) key-value store.
+#
+# This is the canonical "system-level" definition. Application stacks
+# that embed their own Valkey (e.g., firecrawl-redis, quay-redis) are
+# vendored copies of this baseline. Use this version when you want a
+# single shared Valkey instance available to multiple services.
+
+[Unit]
+Description=Valkey key-value store
+Documentation=https://valkey.io/
+
+[Container]
+Image=docker.io/valkey/valkey:latest
+ContainerName=valkey
+
+# Persistent data
+Volume=valkey-data.volume:/data:Z
+
+# Optional configuration file -- uncomment to use a custom valkey.conf.
+# See the README for a starter configuration.
+#Volume=/srv/containers/valkey/conf/valkey.conf:/etc/valkey/valkey.conf:Z
+#Exec=valkey-server /etc/valkey/valkey.conf
+
+# Publish to the host so other containers and local clients can connect.
+# Remove this line if Valkey should only be reachable within a pod or network.
+PublishPort=6379:6379
+
+# Health check
+HealthCmd=valkey-cli ping
+HealthInterval=10s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
