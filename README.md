@@ -29,6 +29,9 @@ The following directories exist but do not yet contain quadlet files:
 
 - Podman 4.4+ with Quadlet support (Podman 5.0+ recommended for `podman quadlet install`)
 - systemd (Linux)
+
+### Anti-patterns
+
 - `podman-compose` is **not** required -- systemd manages all services
 
 ## Host Directory Setup
