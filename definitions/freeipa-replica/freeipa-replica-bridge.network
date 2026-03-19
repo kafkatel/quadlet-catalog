@@ -1,0 +1,25 @@
+# freeipa-replica-bridge.network
+# Podman network backed by the host bridge (br0).
+#
+# Containers on this network get IPs directly on the LAN —
+# no NAT, no port mapping, full L2 adjacency with the host network.
+#
+# Requires: a Linux bridge (br0) with the host's physical NIC enslaved.
+# See the bridge-setup scripts for host configuration.
+
+[Unit]
+Description=Host bridge network for containers (br0)
+After=network-online.target
+Wants=network-online.target
+
+[Network]
+NetworkName=host-bridge
+Driver=bridge
+# Reuse the existing kernel bridge — netavark will not manage its lifecycle.
+Options=bridge_name=br0
+# Disable gateway management — the real gateway is on the LAN, not on this bridge.
+Options=no_default_route=true
+Internal=false
+
+[Install]
+WantedBy=multi-user.target

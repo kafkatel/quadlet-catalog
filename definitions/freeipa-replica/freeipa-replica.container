@@ -1,0 +1,90 @@
+# freeipa-replica.container
+# Containerized FreeIPA replica running its own systemd internally.
+#
+# This container can be deployed in two networking modes:
+#
+# 1. Port publishing (default) — bind ports to a specific host IP to avoid
+#    conflicts with co-located services. Set PublishPort= lines below.
+#
+# 2. Bridge network — attach to a host bridge (br0) with a dedicated IP.
+#    Uncomment the Network= and IP= lines, comment out PublishPort= lines.
+#    Requires a .network quadlet backed by the host bridge.
+#
+# First start runs ipa-replica-install using IPA_SERVER_INSTALL_OPTS.
+# Subsequent starts bring up the existing replica from persistent /data.
+
+[Unit]
+Description=FreeIPA Identity Management replica
+Documentation=https://www.freeipa.org/page/Docker
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=quay.io/freeipa/freeipa-server:rhel9
+ContainerName=freeipa-replica
+HostName=idm-replica.example.com
+
+# --- Networking: Bridge mode ---
+# Attach to a host bridge network with a dedicated LAN IP.
+# No NAT, no port publishing — full L2 adjacency.
+# Requires a .network quadlet backed by br0 (see README).
+#Network=freeipa-replica-bridge.network
+#IP=192.168.137.10
+
+# --- Networking: Port publishing mode ---
+# Bind each service port to a specific host IP to avoid conflicts
+# with other services on the same host (e.g., Satellite on port 443).
+# Replace 192.168.137.10 with your secondary IP.
+
+# DNS (TCP + UDP)
+PublishPort=192.168.137.10:53:53/tcp
+PublishPort=192.168.137.10:53:53/udp
+
+# HTTP / HTTPS
+PublishPort=192.168.137.10:80:80/tcp
+PublishPort=192.168.137.10:443:443/tcp
+
+# Kerberos KDC (TCP + UDP)
+PublishPort=192.168.137.10:88:88/tcp
+PublishPort=192.168.137.10:88:88/udp
+
+# LDAP / LDAPS
+PublishPort=192.168.137.10:389:389/tcp
+PublishPort=192.168.137.10:636:636/tcp
+
+# Kerberos kpasswd (TCP + UDP)
+PublishPort=192.168.137.10:464:464/tcp
+PublishPort=192.168.137.10:464:464/udp
+
+# FreeIPA runs systemd, LDAP, KDC, CA, DNS internally — needs elevated privileges.
+SecurityLabelType=spc_t
+AddCapability=SYS_ADMIN
+AddCapability=NET_ADMIN
+
+# Persistent data — all FreeIPA state lives here after initial install.
+Volume=freeipa-replica-data.volume:/data:Z
+
+# Cgroup access for internal systemd
+Volume=/sys/fs/cgroup:/sys/fs/cgroup:ro
+
+# Tmpfs mounts expected by FreeIPA's internal systemd
+Tmpfs=/run
+Tmpfs=/tmp
+
+# Environment
+EnvironmentFile=./freeipa-replica.env
+
+# Health check — query the LDAP server
+HealthCmd=echo | openssl s_client -connect localhost:636 -quiet 2>/dev/null | head -1
+HealthInterval=30s
+HealthRetries=5
+HealthTimeout=10s
+HealthStartPeriod=300s
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
