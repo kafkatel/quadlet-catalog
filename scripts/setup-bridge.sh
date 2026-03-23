@@ -277,19 +277,38 @@ if ! nmcli connection down "$PARENT_CONN_NAME" 2>/dev/null; then
 fi
 
 echo
-echo "Verifying bridge is active..."
-if ! nmcli -t -f DEVICE,STATE device status | grep -q "^${BRIDGE_NAME}:connected$"; then
-    echo "ERROR: Bridge $BRIDGE_NAME is not in connected state"
+echo "Waiting for bridge to settle..."
+BRIDGE_READY=false
+for i in $(seq 1 15); do
+    if nmcli -t -f DEVICE,STATE device status | grep -q "^${BRIDGE_NAME}:connected$"; then
+        BRIDGE_READY=true
+        break
+    fi
+    sleep 2
+done
+
+if [[ "$BRIDGE_READY" != "true" ]]; then
+    echo "ERROR: Bridge $BRIDGE_NAME did not reach connected state after 30s"
     echo "Check: nmcli device status"
     exit 1
 fi
+echo "Bridge is active"
 
-echo "Verifying bridge has an IP address..."
-BRIDGE_IPS=$(ip -4 addr show "$BRIDGE_NAME" 2>/dev/null || true)
-if ! echo "$BRIDGE_IPS" | grep -q "inet "; then
-    echo "ERROR: No IPv4 address on $BRIDGE_NAME"
+echo "Waiting for IP address..."
+BRIDGE_IPS=""
+for i in $(seq 1 15); do
+    BRIDGE_IPS=$(ip -4 addr show "$BRIDGE_NAME" 2>/dev/null || true)
+    if echo "$BRIDGE_IPS" | grep -q "inet "; then
+        break
+    fi
+    BRIDGE_IPS=""
+    sleep 2
+done
+
+if [[ -z "$BRIDGE_IPS" ]]; then
+    echo "ERROR: No IPv4 address on $BRIDGE_NAME after 30s"
     if [[ "$IP_METHOD" != "manual" ]]; then
-        echo "DHCP lease may not have been obtained yet. Wait and check:"
+        echo "DHCP lease may not have been obtained. Check:"
         echo "  ip -4 addr show $BRIDGE_NAME"
     fi
     exit 1
