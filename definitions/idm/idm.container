@@ -1,0 +1,63 @@
+# idm.container
+# Quadlet container file for FreeIPA IdM Primary Server
+#
+# IMPORTANT: This container requires bridge networking with its own LAN IP.
+# See docs/bridge-networking.md for setup instructions.
+
+[Unit]
+Description=FreeIPA IdM Primary Server
+Documentation=https://github.com/freeipa/freeipa-container
+After=network-online.target idm-bridge-network.service
+Wants=network-online.target
+Requires=idm-bridge-network.service
+
+[Container]
+Image=quay.io/freeipa/freeipa-server:centos-9-stream
+ContainerName=idm
+
+# Hostname (FQDN) for the IdM server
+# MUST be set here or via IPA_SERVER_HOSTNAME environment variable
+# Do NOT use ipa-server-install --hostname (it won't work in containers)
+# Replace with your actual FQDN before deploying
+HostName=idm1.example.com
+
+# Bridge network -- gives container its own LAN IP
+# The network is defined in idm-bridge.network
+# NO PublishPort= -- the container IS on the network
+Network=idm-bridge.network
+
+# Self-DNS -- required when FreeIPA runs its own DNS server
+# Allows the container to resolve its own hostname via its DNS
+DNS=127.0.0.1
+
+# Persistent data volume
+# All FreeIPA configuration, certificates, and databases live here
+# On subsequent starts, the installer is skipped and services just start
+Volume=/srv/containers/idm/data:/data:Z
+
+# Environment configuration
+EnvironmentFile=./idm.env
+
+# Read-only root filesystem (upstream recommendation)
+# The /data volume is writable for state persistence
+ReadOnly=true
+
+# First-run installer arguments (optional)
+# Uncomment and customize for unattended installation
+# Or leave commented to run ipa-server-install interactively on first start
+#Exec=ipa-server-install \
+#  --realm=${IPA_REALM} \
+#  --domain=${IPA_DOMAIN} \
+#  --ds-password=${IPA_DM_PASSWORD} \
+#  --admin-password=${IPA_ADMIN_PASSWORD} \
+#  --setup-dns \
+#  --no-forwarders \
+#  --no-ntp \
+#  --unattended
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
