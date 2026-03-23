@@ -1,0 +1,58 @@
+# satellite.container
+# Quadlet container file for Red Hat Satellite Server
+#
+# ⚠️ EXPERIMENTAL/LAB-ONLY: No official Satellite container images exist.
+# This uses UBI-init with systemd; operator runs satellite-installer manually.
+#
+# IMPORTANT: This container requires bridge networking with its own LAN IP.
+# See docs/bridge-networking.md for setup instructions.
+
+[Unit]
+Description=Red Hat Satellite Server (Experimental)
+Documentation=https://github.com/parmstro/quadlet-catalog/blob/main/definitions/satellite/README.md
+After=network-online.target satellite-build.service satellite-bridge-network.service
+Wants=network-online.target
+Requires=satellite-build.service satellite-bridge-network.service
+
+[Container]
+Image=satellite.build
+ContainerName=satellite
+
+# Hostname (FQDN) for the Satellite server
+# Replace with your actual FQDN before deploying
+HostName=satellite1.example.com
+
+# Bridge network -- gives container its own LAN IP
+# The network is defined in satellite-bridge.network
+Network=satellite-bridge.network
+
+# Persistent data volumes (8 separate mounts for all Satellite state)
+Volume=/srv/containers/satellite/pulp:/var/lib/pulp:Z
+Volume=/srv/containers/satellite/pgsql:/var/lib/pgsql:Z
+Volume=/srv/containers/satellite/foreman:/etc/foreman:Z
+Volume=/srv/containers/satellite/foreman-proxy:/etc/foreman-proxy:Z
+Volume=/srv/containers/satellite/candlepin:/etc/candlepin:Z
+Volume=/srv/containers/satellite/puppet-ssl:/etc/puppetlabs/puppet/ssl:Z
+Volume=/srv/containers/satellite/httpd:/etc/httpd:Z
+Volume=/srv/containers/satellite/log:/var/log:Z
+
+# Environment configuration
+EnvironmentFile=./satellite.env
+
+# Resource limits (Satellite is resource-intensive)
+# Minimum: 4 CPUs, 20 GB RAM
+# Adjust based on expected load and content size
+PodmanArgs=--cpus=4
+PodmanArgs=--memory=20g
+
+# Uncomment if satellite-installer requires privileged mode
+# Test without this first -- may not be needed
+#PodmanArgs=--privileged
+
+[Service]
+Restart=on-failure
+# satellite-installer can take 20+ minutes on first run
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target

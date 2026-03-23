@@ -1,0 +1,13 @@
+[Unit]
+Description=Build the Satellite Server container image from Containerfile
+Documentation=https://github.com/parmstro/quadlet-catalog/blob/main/definitions/satellite/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Build]
+ImageTag=localhost/satellite:latest
+File=Containerfile
+SetWorkingDirectory=file
+
+[Install]
+WantedBy=multi-user.target

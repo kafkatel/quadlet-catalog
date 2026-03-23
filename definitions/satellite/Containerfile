@@ -1,0 +1,52 @@
+# Containerfile for Red Hat Satellite Server
+# Based on UBI 9 with systemd as PID 1
+#
+# EXPERIMENTAL/LAB-ONLY: This is not an official Red Hat Satellite container image.
+# No official Satellite container images exist as of Satellite 6.18. Satellite 6.19
+# (target: May 2026) will ship containerized Capsules; full Satellite containerization
+# is not yet announced.
+#
+# This Containerfile creates a systemd-based container where the operator runs
+# satellite-installer manually after the container starts.
+
+FROM registry.access.redhat.com/ubi9/ubi-init:latest
+
+LABEL maintainer="Quadlet Catalog"
+LABEL description="Red Hat Satellite Server (systemd container, experimental)"
+LABEL version="6.18"
+
+# Install satellite-installer prerequisites
+# The container must be registered to Red Hat CDN or Satellite before building
+# Validate subscription status first to provide clear error messages
+RUN subscription-manager status || \
+    (echo "ERROR: Build host must be registered to Red Hat CDN." && \
+     echo "See README for registration steps: subscription-manager register" && \
+     exit 1)
+
+RUN dnf install -y \
+    https://yum.theforeman.org/releases/3.15/el9/x86_64/foreman-release.rpm \
+    https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/getPackage/module-release.rpm \
+    && dnf module reset -y satellite:el8 \
+    && dnf module enable -y satellite:el8 \
+    && dnf install -y \
+        satellite \
+        satellite-installer \
+        chrony \
+        && dnf clean all
+
+# Create directories for volume mounts
+# The actual persistence happens via bind mounts configured in the .container file
+RUN mkdir -p \
+    /var/lib/pulp \
+    /var/lib/pgsql \
+    /etc/foreman \
+    /etc/foreman-proxy \
+    /etc/candlepin \
+    /etc/puppetlabs/puppet/ssl \
+    /etc/httpd \
+    /var/log/foreman \
+    /var/log/candlepin \
+    /var/log/httpd
+
+# systemd is the init system (already configured in ubi-init base)
+CMD ["/sbin/init"]
