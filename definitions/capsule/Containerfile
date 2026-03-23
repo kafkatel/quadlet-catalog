@@ -1,0 +1,43 @@
+# Containerfile for Red Hat Satellite Capsule Server
+# Based on UBI 9 with systemd as PID 1
+#
+# EXPERIMENTAL/LAB-ONLY: This is not an official Red Hat Satellite container image.
+# Satellite 6.19 (target: May 2026) will ship official containerized Capsule images.
+#
+# This Containerfile creates a systemd-based container where the operator runs
+# satellite-installer --scenario capsule manually after the container starts.
+
+FROM registry.access.redhat.com/ubi9/ubi-init:latest
+
+LABEL maintainer="Quadlet Catalog"
+LABEL description="Red Hat Satellite Capsule Server (systemd container, experimental)"
+LABEL version="6.18"
+
+# Install capsule packages
+# The container must be registered to Red Hat CDN or Satellite before building
+# Validate subscription status first to provide clear error messages
+RUN subscription-manager status || \
+    (echo "ERROR: Build host must be registered to Red Hat CDN." && \
+     echo "See README for registration steps: subscription-manager register" && \
+     exit 1)
+
+RUN dnf install -y \
+    https://yum.theforeman.org/releases/3.15/el9/x86_64/foreman-release.rpm \
+    && dnf module reset -y satellite:el8 \
+    && dnf module enable -y satellite:el8 \
+    && dnf install -y \
+        satellite-capsule \
+        satellite-installer \
+        chrony \
+    && dnf clean all
+
+# Create directories for volume mounts
+RUN mkdir -p \
+    /var/lib/pulp \
+    /etc/foreman-proxy \
+    /etc/puppetlabs/puppet/ssl \
+    /var/log/foreman-proxy \
+    /var/log/httpd
+
+# systemd is the init system (already configured in ubi-init base)
+CMD ["/sbin/init"]

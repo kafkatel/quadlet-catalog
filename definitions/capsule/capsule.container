@@ -1,0 +1,52 @@
+# capsule.container
+# Quadlet container file for Red Hat Satellite Capsule Server
+#
+# ⚠️ EXPERIMENTAL/LAB-ONLY: No official Capsule container images exist yet.
+# This uses UBI-init with systemd; operator runs satellite-installer --scenario capsule manually.
+#
+# IMPORTANT: This container requires bridge networking with its own LAN IP.
+# See docs/bridge-networking.md for setup instructions.
+
+[Unit]
+Description=Red Hat Satellite Capsule Server (Experimental)
+Documentation=https://github.com/parmstro/quadlet-catalog/blob/main/definitions/capsule/README.md
+After=network-online.target capsule-build.service capsule-bridge-network.service
+Wants=network-online.target
+Requires=capsule-build.service capsule-bridge-network.service
+
+[Container]
+Image=capsule.build
+ContainerName=capsule
+
+# Hostname (FQDN) for the Capsule server
+# Replace with your actual FQDN before deploying
+HostName=capsule1.example.com
+
+# Bridge network -- gives container its own LAN IP
+Network=capsule-bridge.network
+
+# Persistent data volumes (4 mounts for Capsule state)
+Volume=/srv/containers/capsule/pulp:/var/lib/pulp:Z
+Volume=/srv/containers/capsule/foreman-proxy:/etc/foreman-proxy:Z
+Volume=/srv/containers/capsule/puppet-ssl:/etc/puppetlabs/puppet/ssl:Z
+Volume=/srv/containers/capsule/log:/var/log:Z
+
+# Environment configuration
+EnvironmentFile=./capsule.env
+
+# Resource limits (Capsule is lighter than full Satellite)
+# Minimum: 2 CPUs, 8 GB RAM
+PodmanArgs=--cpus=2
+PodmanArgs=--memory=8g
+
+# Uncomment if capsule-installer requires privileged mode
+# Test without this first -- may not be needed
+#PodmanArgs=--privileged
+
+[Service]
+Restart=on-failure
+# capsule-installer takes 10-15 minutes on first run
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

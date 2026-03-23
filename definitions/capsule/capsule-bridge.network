@@ -1,0 +1,36 @@
+# capsule-bridge.network
+# Quadlet network file for the Infrastructure unmanaged bridge network
+
+[Unit]
+Description=Infrastructure Unmanaged Bridge Network (br0) for Capsule
+Documentation=https://github.com/parmstro/quadlet-catalog/blob/main/docs/bridge-networking.md
+After=network-online.target
+Wants=network-online.target
+
+[Network]
+# The Podman network name -- containers reference this in Network= directives
+NetworkName=infra-bridge
+
+# Bridge driver with unmanaged mode
+Driver=bridge
+Options=mode=unmanaged
+Options=bridge_name=br0
+
+# Disable Podman's internal DNS -- containers use LAN DNS
+DisableDNS=true
+
+# Enable IPv6 autoconfiguration from LAN router
+IPv6=true
+
+# Network configuration -- MUST match your LAN subnet
+# Adjust these values for your network before deploying
+Subnet=192.168.1.0/24
+Gateway=192.168.1.1
+
+# IP range that Podman assigns to containers
+# Use a subset of your LAN subnet that won't conflict with DHCP
+# Example: 192.168.1.100/28 = .100 through .111 (12 IPs)
+IPRange=192.168.1.100/28
+
+[Install]
+WantedBy=multi-user.target
