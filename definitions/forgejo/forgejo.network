@@ -1,0 +1,15 @@
+# forgejo.network
+# Quadlet network file for Forgejo inter-container DNS resolution
+
+[Unit]
+Description=Forgejo backend network
+After=network-online.target
+Wants=network-online.target
+
+[Network]
+NetworkName=forgejo-backend
+Driver=bridge
+Internal=false
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+# Forgejo Runner Configuration
+# Copy to /srv/containers/forgejo/runner-config/config.yaml before deploying.
+#
+# Adapted from the beardshift K8s ConfigMap (runner-config.yaml).
+# See: https://forgejo.org/docs/latest/admin/actions/#configuration
+
+log:
+  level: info
+
+runner:
+  file: /data/.runner
+  capacity: 1
+  timeout: 3h
+  insecure: false
+  fetch_timeout: 5s
+  fetch_interval: 2s
+
+cache:
+  enabled: true
+  # For a single runner, the built-in cache works fine.
+  # For multiple runners sharing a cache, deploy a dedicated cache server
+  # and set external_server to its address:
+  #   external_server: http://<host-ip>:8088
+  # The cache secret must match between runners and the cache server.
+  # secret: your-cache-shared-secret
+
+container:
+  # Job containers run inside the rootless Podman sidecar, not on the host.
+  network: host
+  privileged: false
+  # Podman socket from the sidecar (shared via pod volume)
+  docker_host: unix:///run/podman/podman.sock
+  force_pull: false
+  options:
+  workdir_parent: /data/workspace

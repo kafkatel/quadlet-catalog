@@ -1,0 +1,55 @@
+# forgejo-runner.container
+# Quadlet container file for the Forgejo Actions CI/CD runner
+#
+# Runs inside a pod with a rootless Podman sidecar (forgejo-runner-podman).
+# The runner is UNPRIVILEGED — it only talks to the Podman socket exposed
+# by the sidecar. Job containers execute inside the sidecar's isolated
+# namespace, not on the host.
+#
+# To run multiple runners, create additional pod/sidecar/runner groups:
+#   forgejo-runner-2.pod, forgejo-runner-2-podman.container,
+#   forgejo-runner-2.container (each with its own data directory)
+
+[Unit]
+Description=Forgejo Actions CI/CD Runner
+Documentation=https://forgejo.org/docs/latest/admin/actions/
+After=network-online.target forgejo-runner-podman.service
+Wants=forgejo-server.service
+Requires=forgejo-runner-podman.service
+
+[Container]
+Image=code.forgejo.org/forgejo/runner:12.6.2
+ContainerName=forgejo-runner
+Pod=forgejo-runner.pod
+
+# Run as non-root (UID 1000)
+User=1000
+Group=1000
+
+# Runner data — registration state persists here
+Volume=/srv/containers/forgejo/runner:/data:Z
+
+# Runner configuration
+Volume=/srv/containers/forgejo/runner-config/config.yaml:/config/config.yaml:Z,ro
+
+# Shared Podman socket from the sidecar — NOT the host socket
+Volume=forgejo-runner-socket.volume:/run/podman:Z
+
+# Environment — registration credentials
+EnvironmentFile=./forgejo-runner.env
+
+# Point the runner at the sidecar's Podman socket
+Environment=DOCKER_HOST=unix:///run/podman/podman.sock
+
+# Runner daemon with config file
+Exec=forgejo-runner daemon --config /config/config.yaml
+
+# NO --privileged — the runner is unprivileged.
+# Container execution is handled by the Podman sidecar.
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

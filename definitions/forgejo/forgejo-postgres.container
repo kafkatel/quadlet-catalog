@@ -1,0 +1,35 @@
+# forgejo-postgres.container
+# Quadlet container file for the Forgejo PostgreSQL database
+#
+# Runs standalone on the network (not in the pod) so it has its own
+# network namespace. The pod joins the same network, so the Forgejo
+# server resolves this container by name (forgejo-postgres).
+
+[Unit]
+Description=PostgreSQL database for Forgejo
+After=network-online.target forgejo-network.service
+Wants=network-online.target
+Requires=forgejo-network.service
+
+[Container]
+Image=docker.io/library/postgres:16
+ContainerName=forgejo-postgres
+Network=forgejo.network
+Volume=forgejo-pgdata.volume:/var/lib/postgresql/data:Z
+EnvironmentFile=./forgejo.env
+
+Environment=POSTGRES_USER=forgejo
+Environment=POSTGRES_DB=forgejo
+
+# Health check
+HealthCmd=pg_isready -U forgejo -d forgejo
+HealthInterval=10s
+HealthRetries=5
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

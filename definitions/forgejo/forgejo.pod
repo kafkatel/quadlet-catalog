@@ -1,0 +1,19 @@
+[Unit]
+Description=Pod for the Forgejo Application Stack
+After=network-online.target forgejo-network.service
+Wants=network-online.target
+Requires=forgejo-network.service
+
+[Pod]
+# Attach the pod to the backend network so pod containers can
+# resolve the standalone PostgreSQL container by name.
+Network=forgejo.network
+
+# Web UI / API
+PublishPort=3000:3000
+
+# Git over SSH
+PublishPort=2222:2222
+
+[Install]
+WantedBy=default.target

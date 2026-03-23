@@ -1,0 +1,51 @@
+# forgejo-runner-podman.container
+# Rootless Podman service sidecar for the Forgejo Actions runner.
+#
+# Provides an isolated container runtime that the runner uses to execute
+# CI/CD job containers. This replaces mounting the host Podman socket,
+# keeping job containers isolated from the host.
+#
+# Mirrors the Podman sidecar pattern from the beardshift K8s deployment:
+#   runner-deployment.yaml → containers[].name: podman
+
+[Unit]
+Description=Forgejo Runner Podman Service (rootless sidecar)
+After=network-online.target
+
+[Container]
+Image=quay.io/podman/stable
+ContainerName=forgejo-runner-podman
+Pod=forgejo-runner.pod
+
+# Run as non-root user (UID 1000, matching the quay.io/podman/stable default)
+User=1000
+Group=1000
+
+# Podman socket — shared with the runner container via the pod's shared volumes
+Volume=forgejo-runner-socket.volume:/run/podman:Z
+
+# Container storage — ephemeral, rebuilt on each restart
+Volume=forgejo-runner-storage.volume:/var/lib/containers:Z
+
+# Home directory for Podman config
+Volume=forgejo-runner-home.volume:/home/podman:Z
+
+# Rootless Podman-in-Podman capabilities (NOT --privileged)
+# These are the minimum capabilities needed for rootless nested containers:
+#   - SYS_ADMIN:  mount namespaces, cgroups (required for overlay/fuse-overlayfs)
+#   - MKNOD:      create device nodes for nested container /dev
+#   - SETUID/SETGID: user namespace mapping inside nested containers
+#   - NET_ADMIN:  network namespace setup for nested containers
+AddDevice=/dev/fuse
+PodmanArgs=--cap-add SYS_ADMIN,MKNOD,SETUID,SETGID,NET_ADMIN
+PodmanArgs=--security-opt label=disable
+
+# Start the Podman API service (listens forever on the socket)
+Exec=sh -c "mkdir -p /home/podman/.config/containers && podman system service -t 0 unix:///run/podman/podman.sock"
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

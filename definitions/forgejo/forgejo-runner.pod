@@ -1,0 +1,12 @@
+[Unit]
+Description=Pod for the Forgejo Actions Runner
+After=network-online.target forgejo-network.service
+Wants=network-online.target
+Requires=forgejo-network.service
+
+[Pod]
+Network=forgejo.network
+# No published ports — the runner connects outbound to the Forgejo server.
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,61 @@
+# forgejo-server.container
+# Quadlet container file for the Forgejo Git service
+#
+# Runs inside the pod for port publication (3000 HTTP, 2222 SSH).
+# Connects to PostgreSQL via the shared backend network.
+
+[Unit]
+Description=Forgejo Git Service
+Documentation=https://forgejo.org/docs/latest/
+After=network-online.target forgejo-postgres.service
+Wants=network-online.target
+Requires=forgejo-postgres.service
+
+[Container]
+Image=codeberg.org/forgejo/forgejo:14-rootless
+ContainerName=forgejo-server
+Pod=forgejo.pod
+
+# Persistent data — repositories, LFS objects, packages, avatars
+Volume=/srv/containers/forgejo/data:/var/lib/gitea:Z
+
+# Configuration directory — Forgejo writes app.ini here on first run
+Volume=/srv/containers/forgejo/config:/etc/gitea:Z
+
+# Environment-based configuration
+# Forgejo uses FORGEJO__section__key format to override app.ini settings
+EnvironmentFile=./forgejo.env
+
+# Server
+Environment=FORGEJO__server__SSH_LISTEN_PORT=2222
+
+# Database — connect to the standalone PostgreSQL container by name
+Environment=FORGEJO__database__DB_TYPE=postgres
+Environment=FORGEJO__database__HOST=forgejo-postgres:5432
+Environment=FORGEJO__database__NAME=forgejo
+Environment=FORGEJO__database__SSL_MODE=disable
+
+# Security — set to true after first install completes
+Environment=FORGEJO__security__INSTALL_LOCK=false
+
+# Actions — resolve action references against this instance
+Environment=FORGEJO__actions__DEFAULT_ACTIONS_URL=self
+Environment=FORGEJO__actions__ENABLED=true
+
+# Package registry — no size limits for container images
+Environment=FORGEJO__packages__LIMIT_SIZE_CONTAINER=-1
+Environment=FORGEJO__packages__LIMIT_TOTAL_OWNER_SIZE=-1
+
+# Health check
+HealthCmd=curl -sf http://localhost:3000/api/healthz || exit 1
+HealthInterval=30s
+HealthRetries=5
+HealthTimeout=5s
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
