@@ -3,8 +3,9 @@
 # Creates a Linux bridge and migrates all host IPs from the physical NIC to the bridge.
 # This enables containers to get their own IPs on the same L2 network as the host.
 #
-# Based on the standard NetworkManager bridge setup pattern for
-# giving containers their own LAN IP addresses.
+# Supports both DHCP and static IP configurations:
+#   - Static: migrates configured addresses to the bridge
+#   - DHCP: creates bridge with DHCP, clones the NIC's MAC so reservations still match
 #
 # DESTRUCTIVE: This script modifies network configuration. Use --dry-run first.
 
@@ -25,6 +26,7 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Creates a Linux bridge and migrates all host IPs from the physical NIC.
+Supports both DHCP and statically configured interfaces.
 
 OPTIONS:
     --interface <name>      Physical interface to enslave (default: auto-detect from default route)
@@ -130,49 +132,87 @@ if [[ -z "$PARENT_CONN_NAME" ]]; then
 fi
 
 echo "Parent connection: $PARENT_CONN_NAME"
+
+# Detect IP method (auto = DHCP, manual = static)
+IP_METHOD=$(nmcli -g ipv4.method connection show "$PARENT_CONN_NAME")
+echo "IP method:         $IP_METHOD"
 echo
 
 # Capture existing IP configuration
-echo "Capturing existing IP configuration from $PARENT_CONN_NAME..."
-PARENT_CONFIG=$(nmcli -t -f ipv4.addresses,ipv4.gateway,ipv4.dns,ipv4.dns-search connection show "$PARENT_CONN_NAME")
+echo "Capturing IP configuration..."
 
-# Parse addresses
-ADDRESSES=$(echo "$PARENT_CONFIG" | grep '^ipv4.addresses:' | sed 's/^ipv4.addresses://g' | tr -d ' ' | grep -v '^$' || true)
-if [[ -z "$ADDRESSES" ]]; then
-    echo "ERROR: No IPv4 addresses found on $PARENT_CONN_NAME"
-    echo "Refusing to create an addressless bridge"
-    exit 1
+if [[ "$IP_METHOD" == "manual" ]]; then
+    # Static: read from connection profile config fields
+    PARENT_CONFIG=$(nmcli -t -f ipv4.addresses,ipv4.gateway,ipv4.dns,ipv4.dns-search connection show "$PARENT_CONN_NAME")
+
+    ADDRESSES=$(echo "$PARENT_CONFIG" | grep '^ipv4.addresses:' | sed 's/^ipv4.addresses://g' | tr -d ' ' | grep -v '^$' || true)
+    GATEWAY=$(echo "$PARENT_CONFIG" | grep '^ipv4.gateway:' | sed 's/^ipv4.gateway://g' | tr -d ' ' | grep -v '^$\|^--$' || true)
+    DNS_SERVERS=$(echo "$PARENT_CONFIG" | grep '^ipv4.dns:' | sed 's/^ipv4.dns://g' | tr -d ' ' | grep -v '^$\|^--$' || true)
+    DNS_SEARCH=$(echo "$PARENT_CONFIG" | grep '^ipv4.dns-search:' | sed 's/^ipv4.dns-search://g' | tr -d ' ' | grep -v '^$\|^--$' || true)
+
+    if [[ -z "$ADDRESSES" ]]; then
+        echo "ERROR: No IPv4 addresses found in static connection profile"
+        echo "Refusing to create an addressless bridge"
+        exit 1
+    fi
+
+    echo "Mode:     static (migrating configured addresses)"
+    echo "Addresses: $ADDRESSES"
+    echo "Gateway:   ${GATEWAY:-<none>}"
+    echo "DNS:       ${DNS_SERVERS:-<none>}"
+    echo "Search:    ${DNS_SEARCH:-<none>}"
+else
+    # DHCP (auto): read active runtime values for display, but bridge will use DHCP too
+    ACTIVE_CONFIG=$(nmcli -t -f IP4.ADDRESS,IP4.GATEWAY,IP4.DNS connection show "$PARENT_CONN_NAME")
+
+    ACTIVE_ADDR=$(echo "$ACTIVE_CONFIG" | grep '^IP4.ADDRESS' | sed 's/^IP4.ADDRESS\[[0-9]*\]://g' | tr -d ' ' | head -1)
+    ACTIVE_GW=$(echo "$ACTIVE_CONFIG" | grep '^IP4.GATEWAY' | sed 's/^IP4.GATEWAY://g' | tr -d ' ' | head -1)
+    ACTIVE_DNS=$(echo "$ACTIVE_CONFIG" | grep '^IP4.DNS' | sed 's/^IP4.DNS\[[0-9]*\]://g' | tr -d ' ' | paste -sd',' -)
+
+    # Get the MAC address of the physical NIC to clone onto the bridge
+    # This preserves DHCP reservations that are bound to the NIC's MAC
+    PARENT_MAC=$(nmcli -g GENERAL.HWADDR device show "$PARENT_IFACE" | tr -d '\\')
+
+    if [[ -z "$ACTIVE_ADDR" ]]; then
+        echo "ERROR: No active IPv4 address on $PARENT_IFACE"
+        echo "Interface may not have a DHCP lease yet"
+        exit 1
+    fi
+
+    echo "Mode:       DHCP (bridge will also use DHCP)"
+    echo "Current IP: $ACTIVE_ADDR (will be reassigned by DHCP)"
+    echo "Gateway:    ${ACTIVE_GW:-<none>}"
+    echo "DNS:        ${ACTIVE_DNS:-<none>}"
+    echo "NIC MAC:    $PARENT_MAC (will be cloned to bridge)"
 fi
 
-# Parse gateway
-GATEWAY=$(echo "$PARENT_CONFIG" | grep '^ipv4.gateway:' | sed 's/^ipv4.gateway://g' | tr -d ' ' | grep -v '^$\|^--$' || true)
-
-# Parse DNS servers
-DNS_SERVERS=$(echo "$PARENT_CONFIG" | grep '^ipv4.dns:' | sed 's/^ipv4.dns://g' | tr -d ' ' | grep -v '^$\|^--$' || true)
-
-# Parse DNS search domains
-DNS_SEARCH=$(echo "$PARENT_CONFIG" | grep '^ipv4.dns-search:' | sed 's/^ipv4.dns-search://g' | tr -d ' ' | grep -v '^$\|^--$' || true)
-
-echo "Addresses to migrate: $ADDRESSES"
-echo "Gateway to migrate:   ${GATEWAY:-<none>}"
-echo "DNS servers:          ${DNS_SERVERS:-<none>}"
-echo "DNS search domains:   ${DNS_SEARCH:-<none>}"
 echo
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "DRY RUN: Would execute the following:"
     echo
-    echo "1. Create bridge connection:"
-    echo "   nmcli connection add type bridge con-name $BRIDGE_CONN_NAME ifname $BRIDGE_NAME \\"
-    echo "     ipv4.addresses $ADDRESSES \\"
-    [[ -n "$GATEWAY" ]] && echo "     ipv4.gateway $GATEWAY \\"
-    [[ -n "$DNS_SERVERS" ]] && echo "     ipv4.dns \"$DNS_SERVERS\" \\"
-    [[ -n "$DNS_SEARCH" ]] && echo "     ipv4.dns-search \"$DNS_SEARCH\" \\"
-    echo "     ipv4.method manual \\"
-    echo "     ipv6.method disabled \\"
-    echo "     bridge.stp $STP_ENABLED \\"
-    echo "     bridge.priority $STP_PRIORITY \\"
-    echo "     connection.autoconnect yes"
+
+    if [[ "$IP_METHOD" == "manual" ]]; then
+        echo "1. Create bridge connection (static):"
+        echo "   nmcli connection add type bridge con-name $BRIDGE_CONN_NAME ifname $BRIDGE_NAME \\"
+        echo "     ipv4.addresses \"$ADDRESSES\" \\"
+        [[ -n "${GATEWAY:-}" ]] && echo "     ipv4.gateway $GATEWAY \\"
+        [[ -n "${DNS_SERVERS:-}" ]] && echo "     ipv4.dns \"$DNS_SERVERS\" \\"
+        [[ -n "${DNS_SEARCH:-}" ]] && echo "     ipv4.dns-search \"$DNS_SEARCH\" \\"
+        echo "     ipv4.method manual \\"
+        echo "     bridge.stp $STP_ENABLED \\"
+        echo "     bridge.priority $STP_PRIORITY \\"
+        echo "     connection.autoconnect yes"
+    else
+        echo "1. Create bridge connection (DHCP, MAC cloned from $PARENT_IFACE):"
+        echo "   nmcli connection add type bridge con-name $BRIDGE_CONN_NAME ifname $BRIDGE_NAME \\"
+        echo "     ipv4.method auto \\"
+        echo "     ethernet.cloned-mac-address $PARENT_MAC \\"
+        echo "     bridge.stp $STP_ENABLED \\"
+        echo "     bridge.priority $STP_PRIORITY \\"
+        echo "     connection.autoconnect yes"
+    fi
+
     echo
     echo "2. Create bridge slave for $PARENT_IFACE:"
     echo "   nmcli connection add type bridge-slave con-name $BRIDGE_SLAVE_CONN_NAME ifname $PARENT_IFACE master $BRIDGE_CONN_NAME"
@@ -193,17 +233,27 @@ if [[ "$DRY_RUN" == "true" ]]; then
 fi
 
 # Execute the bridge setup
-echo "Creating bridge connection..."
-nmcli connection add type bridge con-name "$BRIDGE_CONN_NAME" ifname "$BRIDGE_NAME" \
-    ipv4.addresses "$ADDRESSES" \
-    ${GATEWAY:+ipv4.gateway "$GATEWAY"} \
-    ${DNS_SERVERS:+ipv4.dns "$DNS_SERVERS"} \
-    ${DNS_SEARCH:+ipv4.dns-search "$DNS_SEARCH"} \
-    ipv4.method manual \
-    ipv6.method disabled \
-    bridge.stp "$STP_ENABLED" \
-    bridge.priority "$STP_PRIORITY" \
-    connection.autoconnect yes
+if [[ "$IP_METHOD" == "manual" ]]; then
+    echo "Creating bridge connection (static)..."
+    nmcli connection add type bridge con-name "$BRIDGE_CONN_NAME" ifname "$BRIDGE_NAME" \
+        ipv4.addresses "$ADDRESSES" \
+        ${GATEWAY:+ipv4.gateway "$GATEWAY"} \
+        ${DNS_SERVERS:+ipv4.dns "$DNS_SERVERS"} \
+        ${DNS_SEARCH:+ipv4.dns-search "$DNS_SEARCH"} \
+        ipv4.method manual \
+        ipv6.method disabled \
+        bridge.stp "$STP_ENABLED" \
+        bridge.priority "$STP_PRIORITY" \
+        connection.autoconnect yes
+else
+    echo "Creating bridge connection (DHCP, MAC cloned from $PARENT_IFACE)..."
+    nmcli connection add type bridge con-name "$BRIDGE_CONN_NAME" ifname "$BRIDGE_NAME" \
+        ipv4.method auto \
+        ethernet.cloned-mac-address "$PARENT_MAC" \
+        bridge.stp "$STP_ENABLED" \
+        bridge.priority "$STP_PRIORITY" \
+        connection.autoconnect yes
+fi
 
 echo "Creating bridge slave for $PARENT_IFACE..."
 nmcli connection add type bridge-slave con-name "$BRIDGE_SLAVE_CONN_NAME" \
@@ -217,8 +267,8 @@ echo "Activating bridge..."
 echo "WARNING: If you're connected via SSH, this may cause a brief disconnection."
 nmcli connection up "$BRIDGE_CONN_NAME"
 
-# Wait a moment for bridge to come up
-sleep 3
+# Wait for bridge to come up and (if DHCP) obtain a lease
+sleep 5
 
 echo "Deactivating original standalone profile..."
 if ! nmcli connection down "$PARENT_CONN_NAME" 2>/dev/null; then
@@ -234,19 +284,34 @@ if ! nmcli -t -f DEVICE,STATE device status | grep -q "^${BRIDGE_NAME}:connected
     exit 1
 fi
 
-echo "Verifying host IPs are on bridge..."
-BRIDGE_IPS=$(ip -4 addr show "$BRIDGE_NAME")
-IFS=',' read -ra ADDR_ARRAY <<< "$ADDRESSES"
-for addr in "${ADDR_ARRAY[@]}"; do
-    # Strip CIDR notation and whitespace
-    addr_ip=$(echo "$addr" | cut -d'/' -f1 | tr -d ' ')
-    if ! echo "$BRIDGE_IPS" | grep -q "$addr_ip"; then
-        echo "ERROR: Expected IP $addr_ip not found on $BRIDGE_NAME"
-        echo "Check: ip -4 addr show $BRIDGE_NAME"
-        exit 1
+echo "Verifying bridge has an IP address..."
+BRIDGE_IPS=$(ip -4 addr show "$BRIDGE_NAME" 2>/dev/null || true)
+if ! echo "$BRIDGE_IPS" | grep -q "inet "; then
+    echo "ERROR: No IPv4 address on $BRIDGE_NAME"
+    if [[ "$IP_METHOD" != "manual" ]]; then
+        echo "DHCP lease may not have been obtained yet. Wait and check:"
+        echo "  ip -4 addr show $BRIDGE_NAME"
     fi
-done
-echo "All ${#ADDR_ARRAY[@]} address(es) verified on bridge"
+    exit 1
+fi
+
+# For static, verify the specific addresses were migrated
+if [[ "$IP_METHOD" == "manual" ]]; then
+    echo "Verifying migrated addresses..."
+    IFS=',' read -ra ADDR_ARRAY <<< "$ADDRESSES"
+    for addr in "${ADDR_ARRAY[@]}"; do
+        addr_ip=$(echo "$addr" | cut -d'/' -f1 | tr -d ' ')
+        if ! echo "$BRIDGE_IPS" | grep -q "$addr_ip"; then
+            echo "ERROR: Expected IP $addr_ip not found on $BRIDGE_NAME"
+            echo "Check: ip -4 addr show $BRIDGE_NAME"
+            exit 1
+        fi
+    done
+    echo "All ${#ADDR_ARRAY[@]} address(es) verified on bridge"
+fi
+
+# Show final state
+FINAL_ADDR=$(ip -4 addr show "$BRIDGE_NAME" | grep 'inet ' | awk '{print $2}' | paste -sd', ' -)
 
 echo
 echo "========================================="
@@ -254,7 +319,8 @@ echo "Bridge setup complete!"
 echo "========================================="
 echo "Bridge:    $BRIDGE_NAME ($BRIDGE_CONN_NAME)"
 echo "Interface: $PARENT_IFACE (enslaved)"
-echo "Addresses: $ADDRESSES"
+echo "Mode:      $IP_METHOD"
+echo "Addresses: $FINAL_ADDR"
 echo
 echo "ROLLBACK INSTRUCTIONS (if needed):"
 echo "  sudo nmcli connection up \"$PARENT_CONN_NAME\""
