@@ -20,7 +20,10 @@ hand.
 
 | Definition | Description | Components | Architecture |
 |------------|-------------|------------|--------------|
+| [capsule](definitions/capsule/) | Red Hat Satellite Capsule (experimental/lab-only) | Capsule server | Standalone container (bridge network, local build) |
 | [firecrawl](definitions/firecrawl/) | Web scraping API with Playwright-based rendering | API, Worker, Playwright, Redis | Pod + Network |
+| [forgejo](definitions/forgejo/) | Self-hosted Git forge with CI/CD | Server, PostgreSQL, Runner | Pod + Network |
+| [idm](definitions/idm/) | FreeIPA Identity Management Primary | IdM server | Standalone container (bridge network) |
 | [jellyfin](definitions/jellyfin/) | Free open-source media server | Jellyfin server | Standalone container |
 | [librechat](definitions/librechat/) | Self-hosted AI chat platform with RAG support | API, RAG API, MongoDB, Meilisearch, Valkey, PGVector | Pod |
 | [mcp-context7](definitions/mcp-context7/) | Context7 library documentation MCP server | MCP server | Standalone container |
@@ -28,6 +31,7 @@ hand.
 | [perplexity-sonar](definitions/perplexity-sonar/) | Perplexity Sonar API MCP server (local build) | MCP server | Pod + Network + Build |
 | [plex](definitions/plex/) | Plex Media Server | Plex server | Standalone container |
 | [quay](definitions/quay/) | Container image registry with vulnerability scanning | Registry, Mirror, Clair, PostgreSQL (x2), Redis | Pod + Network |
+| [satellite](definitions/satellite/) | Red Hat Satellite Server (experimental/lab-only) | Satellite server | Standalone container (bridge network, local build) |
 | [valkey](definitions/valkey/) | Standalone Valkey (Redis-compatible) key-value store | Valkey server | Standalone container |
 
 ### Placeholder Definitions
@@ -150,7 +154,10 @@ Replace `systemctl --user` with `sudo systemctl` for system-level deployments.
 quadlet-catalog/
 ├── README.md                  # This file
 ├── definitions/               # All application definitions
+│   ├── capsule/               # Satellite Capsule (experimental)
 │   ├── firecrawl/             # Web scraping API stack
+│   ├── forgejo/               # Forgejo Git forge with Actions CI/CD
+│   ├── idm/                   # FreeIPA Identity Management
 │   ├── jellyfin/              # Jellyfin media server
 │   ├── librechat/             # AI chat platform stack
 │   ├── mcp-context7/          # Context7 library docs MCP server
@@ -158,11 +165,15 @@ quadlet-catalog/
 │   ├── perplexity-sonar/      # Perplexity Sonar MCP server
 │   ├── plex/                  # Plex Media Server
 │   ├── quay/                  # Container registry stack
+│   ├── satellite/             # Red Hat Satellite Server (experimental)
 │   ├── valkey/                # Valkey key-value store (redis → valkey symlink)
 │   ├── codejail/              # (planned) Code sandbox
 │   └── qemu/                  # (planned) QEMU VM management
 ├── docs/
+│   ├── bridge-networking.md   # Bridge networking for infrastructure containers
 │   └── CONTRIBUTING.md        # How to add new definitions
+├── scripts/
+│   └── setup-bridge.sh        # Automated bridge setup
 └── .gitmodules                # Git submodule declarations
 ```
 
