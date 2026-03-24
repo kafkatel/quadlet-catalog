@@ -48,18 +48,19 @@ Environment="CLI_ARGS=--listen 0.0.0.0"
 # Web UI port
 PublishPort=8188:8188
 
-# Model storage — large files, persist across container rebuilds
-Volume=/srv/containers/comfyui/models:/root/ComfyUI/models
-Volume=/srv/containers/comfyui/cache/huggingface:/root/.cache/huggingface/hub
-Volume=/srv/containers/comfyui/cache/torch-hub:/root/.cache/torch/hub
+# Shared model storage — see docs/model-storage.md
+# Uses :z (shared) suffix because multiple containers may access these paths
+Volume=/srv/models/comfyui:/root/ComfyUI/models:z
+Volume=/srv/models/huggingface:/root/.cache/huggingface:z
+Volume=/srv/models/torch:/root/.cache/torch:z
 
-# User data — inputs, outputs, saved workflows
-Volume=/srv/containers/comfyui/input:/root/ComfyUI/input
-Volume=/srv/containers/comfyui/output:/root/ComfyUI/output
-Volume=/srv/containers/comfyui/workflows:/root/ComfyUI/user/default/workflows
+# Per-application data — inputs, outputs, saved workflows
+Volume=/srv/containers/comfyui/input:/root/ComfyUI/input:Z
+Volume=/srv/containers/comfyui/output:/root/ComfyUI/output:Z
+Volume=/srv/containers/comfyui/workflows:/root/ComfyUI/user/default/workflows:Z
 
 # Custom nodes — installed extensions persist here
-Volume=/srv/containers/comfyui/custom_nodes:/root/ComfyUI/custom_nodes
+Volume=/srv/containers/comfyui/custom_nodes:/root/ComfyUI/custom_nodes:Z
 
 [Service]
 Restart=on-failure

@@ -69,12 +69,19 @@ nvidia-smi
 
 ### 1. Create Host Directories
 
+Model storage is shared across AI services (see [docs/model-storage.md](../../docs/model-storage.md)):
+
 ```bash
-mkdir -p /srv/containers/comfyui/{models,custom_nodes,input,output,workflows}
-mkdir -p /srv/containers/comfyui/cache/{huggingface,torch-hub}
+# Shared model storage (used by ComfyUI, vLLM, TGI, etc.)
+sudo mkdir -p /srv/models/huggingface/hub
+sudo mkdir -p /srv/models/torch/hub
+sudo mkdir -p /srv/models/comfyui/{checkpoints,clip,clip_vision,controlnet,embeddings,loras,style_models,unet,upscale_models,vae}
+
+# Per-application data (ComfyUI only)
+mkdir -p /srv/containers/comfyui/{custom_nodes,input,output,workflows}
 ```
 
-Model storage is the largest directory — allocate at least 50 GB, more if you plan to use SDXL, Flux, or video models.
+Allocate at least 50 GB for `/srv/models/`, more for SDXL, Flux, or LLM models.
 
 ### 2. Configure GPU Environment
 
@@ -173,10 +180,12 @@ podman logs comfyui 2>&1 | grep -i "cuda\|rocm\|gpu\|device"
 
 ## Model Storage
 
-Models are stored on the host at `/srv/containers/comfyui/models/`. The directory structure matches ComfyUI's internal layout:
+Models use the shared host-level storage at `/srv/models/`. See [docs/model-storage.md](../../docs/model-storage.md) for the full layout and rationale.
+
+**ComfyUI-specific models** (checkpoints, LoRAs, VAEs from CivitAI, etc.) go in `/srv/models/comfyui/`:
 
 ```
-/srv/containers/comfyui/models/
+/srv/models/comfyui/
 ├── checkpoints/      # Base models (SD 1.5, SDXL, Flux, etc.)
 ├── clip/             # Text encoders
 ├── controlnet/       # ControlNet models
@@ -187,18 +196,15 @@ Models are stored on the host at `/srv/containers/comfyui/models/`. The director
 └── ...               # Other model types
 ```
 
-Download models from [CivitAI](https://civitai.com/) or [Hugging Face](https://huggingface.co/) and place them in the appropriate subdirectory. ComfyUI scans these directories at startup.
+**HuggingFace models** (downloaded by diffusers, transformers, etc.) go in `/srv/models/huggingface/`. These are automatically shared with any other container that mounts the same path (vLLM, TGI, etc.) — no duplication.
+
+Download models from [CivitAI](https://civitai.com/) or [Hugging Face](https://huggingface.co/) and place them in the appropriate directory. ComfyUI scans the model directories at startup.
 
 ### Sharing Models with Other Services
 
-The cache directories can be shared with other AI services (e.g., a vLLM instance) to avoid duplicate downloads:
+All model volume mounts use the `:z` (lowercase, shared) SELinux suffix so multiple containers can access the same paths simultaneously. When ComfyUI downloads a model from HuggingFace, any other container mounting `/srv/models/huggingface` (vLLM, TGI, etc.) can use it immediately without re-downloading.
 
-```ini
-# In comfyui.container — point to a shared Hugging Face cache
-Volume=/srv/containers/shared-models/huggingface:/root/.cache/huggingface/hub
-```
-
-Use the `:z` (lowercase, shared) SELinux suffix instead of `:Z` if multiple containers access the same path.
+Do **not** use `:Z` (uppercase, private) on shared model paths — SELinux relabels the directory exclusively for one container, breaking access for all others.
 
 ## Custom Nodes
 
@@ -214,15 +220,22 @@ ComfyUI extensions (custom nodes) persist at `/srv/containers/comfyui/custom_nod
 
 ## Data Persistence
 
+**Shared model storage** (`:z` — accessible by multiple containers):
+
 | Host Path | Container Mount | Purpose |
 |-----------|----------------|---------|
-| `/srv/containers/comfyui/models` | `/root/ComfyUI/models` | Model checkpoints, LoRAs, VAEs, etc. |
+| `/srv/models/comfyui` | `/root/ComfyUI/models` | ComfyUI checkpoints, LoRAs, VAEs, etc. |
+| `/srv/models/huggingface` | `/root/.cache/huggingface` | HuggingFace model cache (shared) |
+| `/srv/models/torch` | `/root/.cache/torch` | PyTorch hub cache (shared) |
+
+**Per-application data** (`:Z` — private to this container):
+
+| Host Path | Container Mount | Purpose |
+|-----------|----------------|---------|
 | `/srv/containers/comfyui/custom_nodes` | `/root/ComfyUI/custom_nodes` | Installed extensions |
 | `/srv/containers/comfyui/input` | `/root/ComfyUI/input` | Input images for img2img, inpainting |
 | `/srv/containers/comfyui/output` | `/root/ComfyUI/output` | Generated images |
 | `/srv/containers/comfyui/workflows` | `/root/ComfyUI/user/default/workflows` | Saved workflow JSON files |
-| `/srv/containers/comfyui/cache/huggingface` | `/root/.cache/huggingface/hub` | HuggingFace model cache |
-| `/srv/containers/comfyui/cache/torch-hub` | `/root/.cache/torch/hub` | PyTorch hub cache |
 
 ## AMD GFX Version Reference
 

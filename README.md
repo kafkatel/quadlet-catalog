@@ -55,20 +55,32 @@ The following directories exist but do not yet contain quadlet files:
 
 ## Host Directory Setup
 
-Most definitions store configuration and persistent data under `/srv/containers/{appname}/`. This path is used because `/srv` carries the correct SELinux context (`system_u:object_r:var_t:s0`) on Fedora, RHEL, and CentOS, which means Podman containers can bind-mount subdirectories without requiring manual relabeling or `semanage fcontext` rules. Files placed under `/srv` inherit this context automatically.
+Host data is organized under two top-level paths in `/srv/`:
+
+| Path | Purpose | SELinux Suffix |
+|------|---------|---------------|
+| `/srv/containers/{appname}/` | Per-application data (config, user data, logs) | `:Z` (private) |
+| `/srv/models/` | Shared AI model storage (HuggingFace, PyTorch, ComfyUI) | `:z` (shared) |
+
+Both paths inherit the correct SELinux context (`system_u:object_r:var_t:s0`) from `/srv` on Fedora, RHEL, and CentOS, so Podman containers can bind-mount subdirectories without manual relabeling or `semanage fcontext` rules.
+
+For AI/ML definitions that share model files across containers (ComfyUI, vLLM, etc.), see [docs/model-storage.md](docs/model-storage.md).
 
 ### Creating the Directory Structure
 
 For each application, create the required directories before deploying:
 
 ```bash
-# Create the base directory (if it doesn't exist)
+# Per-application data
 sudo mkdir -p /srv/containers
 
 # Create per-application directories
 # The exact subdirectories vary by definition -- see each definition's README.
 # Example for LibreChat:
 sudo mkdir -p /srv/containers/librechat/{conf,images,uploads,logs,meilisearch_data,mongodb_data,pgvector_data,valkey/data,valkey/conf}
+
+# Shared model storage (for AI/ML definitions)
+sudo mkdir -p /srv/models/{huggingface/hub,torch/hub}
 ```
 
 ### Why `/srv/containers/`?
@@ -173,7 +185,8 @@ quadlet-catalog/
 │   └── qemu/                  # (planned) QEMU VM management
 ├── docs/
 │   ├── bridge-networking.md   # Bridge networking for infrastructure containers
-│   └── CONTRIBUTING.md        # How to add new definitions
+│   ├── CONTRIBUTING.md        # How to add new definitions
+│   └── model-storage.md       # Shared AI model storage layout
 ├── scripts/
 │   └── setup-bridge.sh        # Automated bridge setup
 └── .gitmodules                # Git submodule declarations
