@@ -54,10 +54,14 @@ Volume=/srv/models/comfyui:/root/ComfyUI/models:z
 Volume=/srv/models/huggingface:/root/.cache/huggingface:z
 Volume=/srv/models/torch:/root/.cache/torch:z
 
-# Per-application data — inputs, outputs, saved workflows
+# User directory — persists ComfyUI-Manager cache, workflows, assets DB, and log.
+# Without this, the Manager re-fetches ComfyRegistry data (133 pages) and
+# 5 GitHub JSON files on every startup.
+Volume=/srv/containers/comfyui/user:/root/ComfyUI/user:Z
+
+# Per-application data — inputs, outputs
 Volume=/srv/containers/comfyui/input:/root/ComfyUI/input:Z
 Volume=/srv/containers/comfyui/output:/root/ComfyUI/output:Z
-Volume=/srv/containers/comfyui/workflows:/root/ComfyUI/user/default/workflows:Z
 
 # Custom nodes — installed extensions persist here
 Volume=/srv/containers/comfyui/custom_nodes:/root/ComfyUI/custom_nodes:Z

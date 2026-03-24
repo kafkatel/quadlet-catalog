@@ -78,7 +78,7 @@ sudo mkdir -p /srv/models/torch/hub
 sudo mkdir -p /srv/models/comfyui/{checkpoints,clip,clip_vision,controlnet,embeddings,loras,style_models,unet,upscale_models,vae}
 
 # Per-application data (ComfyUI only)
-mkdir -p /srv/containers/comfyui/{custom_nodes,input,output,workflows}
+mkdir -p /srv/containers/comfyui/{custom_nodes,input,output,user}
 ```
 
 Allocate at least 50 GB for `/srv/models/`, more for SDXL, Flux, or LLM models.
@@ -232,10 +232,21 @@ ComfyUI extensions (custom nodes) persist at `/srv/containers/comfyui/custom_nod
 
 | Host Path | Container Mount | Purpose |
 |-----------|----------------|---------|
+| `/srv/containers/comfyui/user` | `/root/ComfyUI/user` | Manager cache, workflows, assets DB, log (see below) |
 | `/srv/containers/comfyui/custom_nodes` | `/root/ComfyUI/custom_nodes` | Installed extensions |
 | `/srv/containers/comfyui/input` | `/root/ComfyUI/input` | Input images for img2img, inpainting |
 | `/srv/containers/comfyui/output` | `/root/ComfyUI/output` | Generated images |
-| `/srv/containers/comfyui/workflows` | `/root/ComfyUI/user/default/workflows` | Saved workflow JSON files |
+
+### What's in `user/`
+
+The `user/` directory is the most important volume for startup performance. Without it, every restart re-fetches:
+
+| Path | Content | Impact Without Persistence |
+|------|---------|---------------------------|
+| `__manager/` | ComfyUI-Manager config + cached JSON | Re-downloads 5 GitHub JSON files + 133 pages of ComfyRegistry data on every start |
+| `default/workflows/` | Saved workflow files | User workflows lost on restart |
+| `comfyui.log` | Application log | No log history |
+| `assets.db` | SQLite assets database | Re-scans all models on every start |
 
 ## AMD GFX Version Reference
 
