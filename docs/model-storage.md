@@ -135,9 +135,50 @@ Volume=/srv/models/huggingface:/root/.cache/huggingface:z
 
 All three containers read/write to the same `/srv/models/huggingface/hub/` on the host. When ComfyUI downloads a model from HuggingFace, vLLM can use it immediately without re-downloading.
 
-## Environment Variables
+## Host-Side Configuration
 
-Some containers expect environment variables pointing to the cache directory. These are typically set correctly by default when you mount to the standard paths above, but you can override them explicitly:
+By default, HuggingFace tools (`huggingface-cli`, `transformers`, `diffusers`) download models to `~/.cache/huggingface/`. To make them use `/srv/models/` instead — so downloads from the host and from inside containers all land in the same place — set these environment variables in your shell profile:
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or ~/.profile
+export HF_HOME=/srv/models/huggingface
+export TORCH_HOME=/srv/models/torch
+```
+
+After sourcing the profile, all HuggingFace commands use the shared location:
+
+```bash
+source ~/.bashrc
+
+# Downloads to /srv/models/huggingface/hub/models--meta-llama--...
+huggingface-cli download meta-llama/Llama-3.1-8B-Instruct
+
+# Verify
+ls /srv/models/huggingface/hub/
+```
+
+### System-Wide Configuration
+
+To set this for all users on the system, create an environment file that's loaded by all login shells:
+
+```bash
+# Create system-wide environment configuration
+cat <<'EOF' | sudo tee /etc/profile.d/model-storage.sh
+# Shared AI model storage — see /srv/models/
+export HF_HOME=/srv/models/huggingface
+export TORCH_HOME=/srv/models/torch
+EOF
+
+sudo chmod 644 /etc/profile.d/model-storage.sh
+```
+
+This is loaded by bash, zsh, and other POSIX shells on login. For systemd services that don't source login profiles, use a systemd environment generator or set the variables in each service's `.env` file.
+
+This means `huggingface-cli download` on the host and a container mounting `/srv/models/huggingface` both read and write the same files. Download a model once from either side and it's available everywhere.
+
+## Environment Variables Reference
+
+These variables control where AI libraries store cached models. Inside containers, the bind mounts handle this automatically (the container's default `~/.cache/` path points to the shared host storage). On the host, set `HF_HOME` and `TORCH_HOME` as shown above.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
