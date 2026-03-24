@@ -21,6 +21,7 @@ hand.
 | Definition | Description | Components | Architecture |
 |------------|-------------|------------|--------------|
 | [capsule](definitions/capsule/) | Red Hat Satellite Capsule (experimental/lab-only) | Capsule server | Standalone container (bridge network, local build) |
+| [comfyui](definitions/comfyui/) | GPU-accelerated image generation (Stable Diffusion) | ComfyUI server | Standalone container (GPU) |
 | [firecrawl](definitions/firecrawl/) | Web scraping API with Playwright-based rendering | API, Worker, Playwright, Redis | Pod + Network |
 | [forgejo](definitions/forgejo/) | Self-hosted Git forge with CI/CD | Server, PostgreSQL, Runner | Pod + Network |
 | [idm](definitions/idm/) | FreeIPA Identity Management Primary | IdM server | Standalone container (bridge network) |
@@ -155,6 +156,7 @@ quadlet-catalog/
 ├── README.md                  # This file
 ├── definitions/               # All application definitions
 │   ├── capsule/               # Satellite Capsule (experimental)
+│   ├── comfyui/               # ComfyUI image generation (GPU)
 │   ├── firecrawl/             # Web scraping API stack
 │   ├── forgejo/               # Forgejo Git forge with Actions CI/CD
 │   ├── idm/                   # FreeIPA Identity Management
