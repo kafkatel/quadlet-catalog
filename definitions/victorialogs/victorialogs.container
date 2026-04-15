@@ -1,0 +1,32 @@
+# victorialogs.container
+# Quadlet container file for VictoriaLogs — high-performance log management
+
+[Unit]
+Description=VictoriaLogs Log Management
+Documentation=https://docs.victoriametrics.com/victorialogs/
+
+[Container]
+Image=docker.io/victoriametrics/victoria-logs:v1.50.0
+ContainerName=victorialogs
+
+# Persistent log storage
+Volume=victorialogs-data.volume:/victoria-logs-data:Z
+
+# CLI flags passed as container command
+Exec=-storageDataPath=/victoria-logs-data -retentionPeriod=30d -httpListenAddr=:9428
+
+# HTTP API for ingestion and querying
+PublishPort=9428:9428
+
+# Health check (image has no curl — use wget)
+HealthCmd=wget -qO- http://localhost:9428/health || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
