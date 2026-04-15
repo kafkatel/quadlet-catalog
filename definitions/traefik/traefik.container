@@ -1,0 +1,44 @@
+# traefik.container
+# Quadlet container file for Traefik — reverse proxy and TLS termination
+#
+# Uses the file provider for service discovery (no Docker socket needed).
+# Place dynamic route configurations in /srv/containers/traefik/dynamic/.
+
+[Unit]
+Description=Traefik Reverse Proxy
+Documentation=https://doc.traefik.io/traefik/
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/traefik:v3.6
+ContainerName=traefik
+
+# Static configuration
+Volume=/srv/containers/traefik/traefik.yml:/etc/traefik/traefik.yml:Z,ro
+
+# Dynamic configuration (file provider — Traefik watches for changes)
+Volume=/srv/containers/traefik/dynamic:/etc/traefik/dynamic:Z,ro
+
+# ACME certificate storage (Let's Encrypt)
+Volume=/srv/containers/traefik/acme:/etc/traefik/acme:Z
+
+# HTTP and HTTPS entrypoints
+PublishPort=80:80
+PublishPort=443:443
+
+# Dashboard (optional — remove for production or protect with middleware)
+PublishPort=8080:8080
+
+# Health check (requires --ping=true in static config)
+HealthCmd=traefik healthcheck --ping
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

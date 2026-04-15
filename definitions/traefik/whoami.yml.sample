@@ -1,0 +1,23 @@
+# whoami.yml.sample
+# Example dynamic configuration for Traefik file provider.
+# Copy to /srv/containers/traefik/dynamic/ to activate.
+#
+# This example routes requests to a backend service by hostname.
+# Adjust the rule and URL to match your services.
+
+http:
+  routers:
+    whoami:
+      rule: "Host(`whoami.example.com`)"
+      service: whoami
+      entryPoints:
+        - web
+      # Uncomment for HTTPS with Let's Encrypt:
+      #tls:
+      #  certResolver: letsencrypt
+
+  services:
+    whoami:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:8080"

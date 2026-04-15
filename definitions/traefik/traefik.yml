@@ -1,0 +1,47 @@
+# traefik.yml
+# Traefik static configuration.
+# Copy to /srv/containers/traefik/traefik.yml before deploying.
+
+# API and dashboard
+api:
+  dashboard: true
+  insecure: true    # Serves dashboard on :8080 without auth.
+                    # For production, set to false and use a router with
+                    # authentication middleware in the dynamic config.
+
+# Health check endpoint
+ping: {}
+
+# Entrypoints
+entryPoints:
+  web:
+    address: ":80"
+    # Uncomment to redirect all HTTP to HTTPS:
+    #http:
+    #  redirections:
+    #    entryPoint:
+    #      to: websecure
+    #      scheme: https
+  websecure:
+    address: ":443"
+
+# File provider — watches /etc/traefik/dynamic/ for route definitions
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# Uncomment to enable Let's Encrypt automatic certificates:
+#certificatesResolvers:
+#  letsencrypt:
+#    acme:
+#      email: you@example.com
+#      storage: /etc/traefik/acme/acme.json
+#      httpChallenge:
+#        entryPoint: web
+
+# Logging
+log:
+  level: INFO
+
+accessLog: {}
