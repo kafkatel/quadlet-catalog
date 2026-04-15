@@ -1,0 +1,29 @@
+# uptime-kuma.container
+# Quadlet container file for Uptime Kuma — service availability monitoring
+
+[Unit]
+Description=Uptime Kuma Availability Monitor
+Documentation=https://github.com/louislam/uptime-kuma
+
+[Container]
+Image=docker.io/louislam/uptime-kuma:2
+ContainerName=uptime-kuma
+
+# Persistent data (SQLite database, monitors, notifications)
+Volume=uptime-kuma-data.volume:/app/data:Z
+
+# Web UI
+PublishPort=3001:3001
+
+# Health check
+HealthCmd=node /app/extra/healthcheck.js
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
