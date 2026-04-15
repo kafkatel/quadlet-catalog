@@ -22,18 +22,34 @@ hand.
 |------------|-------------|------------|--------------|
 | [capsule](definitions/capsule/) | Red Hat Satellite Capsule (experimental/lab-only) | Capsule server | Standalone container (bridge network, local build) |
 | [comfyui](definitions/comfyui/) | GPU-accelerated image generation (Stable Diffusion) | ComfyUI server | Standalone container (GPU) |
+| [bazarr](definitions/bazarr/) | Automatic subtitle management | Bazarr server | Standalone container |
 | [firecrawl](definitions/firecrawl/) | Web scraping API with Playwright-based rendering | API, Worker, Playwright, Redis | Pod + Network |
 | [forgejo](definitions/forgejo/) | Self-hosted Git forge with CI/CD | Server, PostgreSQL, Runner | Pod + Network |
+| [grafana](definitions/grafana/) | Observability dashboards and visualization | Grafana server | Standalone container |
+| [httpbin](definitions/httpbin/) | HTTP request/response testing service | go-httpbin server | Standalone container |
 | [idm](definitions/idm/) | FreeIPA Identity Management Primary | IdM server | Standalone container (bridge network) |
+| [immich](definitions/immich/) | Self-hosted photo and video management | Server, ML, PostgreSQL, Valkey | Pod + Network |
 | [jellyfin](definitions/jellyfin/) | Free open-source media server | Jellyfin server | Standalone container |
 | [librechat](definitions/librechat/) | Self-hosted AI chat platform with RAG support | API, RAG API, MongoDB, Meilisearch, Valkey, PGVector | Pod |
+| [loki](definitions/loki/) | Log aggregation system (Grafana Loki) | Loki server | Standalone container |
 | [mcp-context7](definitions/mcp-context7/) | Context7 library documentation MCP server | MCP server | Standalone container |
 | [mcp-playwright](definitions/mcp-playwright/) | Microsoft Playwright MCP server | Playwright server | Standalone container |
 | [perplexity-sonar](definitions/perplexity-sonar/) | Perplexity Sonar API MCP server (local build) | MCP server | Pod + Network + Build |
 | [plex](definitions/plex/) | Plex Media Server | Plex server | Standalone container |
+| [privatebin](definitions/privatebin/) | Zero-knowledge encrypted pastebin | PrivateBin server | Standalone container |
+| [prowlarr](definitions/prowlarr/) | Indexer manager for the *arr stack | Prowlarr server | Standalone container |
 | [quay](definitions/quay/) | Container image registry with vulnerability scanning | Registry, Mirror, Clair, PostgreSQL (x2), Redis | Pod + Network |
+| [radarr](definitions/radarr/) | Automated movie library management | Radarr server | Standalone container |
 | [satellite](definitions/satellite/) | Red Hat Satellite Server (experimental/lab-only) | Satellite server | Standalone container (bridge network, local build) |
+| [seerr](definitions/seerr/) | Media request and discovery platform | Seerr server | Standalone container |
+| [sonarr](definitions/sonarr/) | Automated TV show library management | Sonarr server | Standalone container |
+| [tautulli](definitions/tautulli/) | Plex monitoring and analytics | Tautulli server | Standalone container |
+| [traefik](definitions/traefik/) | Reverse proxy with automatic TLS | Traefik server | Standalone container |
+| [uptime-kuma](definitions/uptime-kuma/) | Service availability monitoring | Uptime Kuma server | Standalone container |
 | [valkey](definitions/valkey/) | Standalone Valkey (Redis-compatible) key-value store | Valkey server | Standalone container |
+| [victorialogs](definitions/victorialogs/) | High-performance log management | VictoriaLogs server | Standalone container |
+| [victoriametrics](definitions/victoriametrics/) | High-performance time-series database | VictoriaMetrics server | Standalone container |
+| [wazuh](definitions/wazuh/) | SIEM and XDR platform for threat detection | Indexer, Manager, Dashboard | Pod + Network |
 
 ### Placeholder Definitions
 
@@ -169,18 +185,34 @@ quadlet-catalog/
 ├── definitions/               # All application definitions
 │   ├── capsule/               # Satellite Capsule (experimental)
 │   ├── comfyui/               # ComfyUI image generation (GPU)
+│   ├── bazarr/                # Bazarr subtitle automation
 │   ├── firecrawl/             # Web scraping API stack
 │   ├── forgejo/               # Forgejo Git forge with Actions CI/CD
+│   ├── grafana/               # Grafana observability dashboards
+│   ├── httpbin/               # go-httpbin HTTP testing
 │   ├── idm/                   # FreeIPA Identity Management
+│   ├── immich/                # Immich photo management stack
 │   ├── jellyfin/              # Jellyfin media server
 │   ├── librechat/             # AI chat platform stack
+│   ├── loki/                  # Grafana Loki log aggregation
 │   ├── mcp-context7/          # Context7 library docs MCP server
 │   ├── mcp-playwright/        # Playwright MCP server
 │   ├── perplexity-sonar/      # Perplexity Sonar MCP server
 │   ├── plex/                  # Plex Media Server
+│   ├── privatebin/            # PrivateBin encrypted pastebin
+│   ├── prowlarr/              # Prowlarr indexer manager
 │   ├── quay/                  # Container registry stack
+│   ├── radarr/                # Radarr movie automation
 │   ├── satellite/             # Red Hat Satellite Server (experimental)
+│   ├── seerr/                 # Seerr media request portal
+│   ├── sonarr/                # Sonarr TV show automation
+│   ├── tautulli/              # Tautulli Plex analytics
+│   ├── traefik/               # Traefik reverse proxy
+│   ├── uptime-kuma/           # Uptime Kuma availability monitor
 │   ├── valkey/                # Valkey key-value store (redis → valkey symlink)
+│   ├── victorialogs/          # VictoriaLogs log management
+│   ├── victoriametrics/       # VictoriaMetrics time-series DB
+│   ├── wazuh/                 # Wazuh SIEM/XDR platform
 │   ├── codejail/              # (planned) Code sandbox
 │   └── qemu/                  # (planned) QEMU VM management
 ├── docs/
