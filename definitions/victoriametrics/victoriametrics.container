@@ -1,0 +1,37 @@
+# victoriametrics.container
+# Quadlet container file for VictoriaMetrics — high-performance time-series database
+
+[Unit]
+Description=VictoriaMetrics Time-Series Database
+Documentation=https://docs.victoriametrics.com/
+
+[Container]
+Image=docker.io/victoriametrics/victoria-metrics:v1.140.0
+ContainerName=victoriametrics
+
+# Persistent TSDB storage
+Volume=victoriametrics-data.volume:/victoria-metrics-data:Z
+
+# CLI flags passed as container command
+Exec=-storageDataPath=/victoria-metrics-data -retentionPeriod=90d -httpListenAddr=:8428
+
+# Optional Prometheus scrape config — uncomment to enable metric collection.
+# Create the config at /srv/containers/victoriametrics/prometheus.yml
+#Volume=/srv/containers/victoriametrics/prometheus.yml:/etc/prometheus/prometheus.yml:Z,ro
+#Exec=-storageDataPath=/victoria-metrics-data -retentionPeriod=90d -httpListenAddr=:8428 -promscrape.config=/etc/prometheus/prometheus.yml
+
+# HTTP API and web UI (/vmui)
+PublishPort=8428:8428
+
+# Health check (image has no curl — use wget)
+HealthCmd=wget -qO- http://localhost:8428/health || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
