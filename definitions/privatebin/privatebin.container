@@ -1,0 +1,37 @@
+# privatebin.container
+# Quadlet container file for PrivateBin — zero-knowledge encrypted pastebin
+
+[Unit]
+Description=PrivateBin Encrypted Pastebin
+Documentation=https://privatebin.info/
+
+[Container]
+Image=docker.io/privatebin/nginx-fpm-alpine:stable
+ContainerName=privatebin
+
+# Persistent paste storage
+Volume=privatebin-data.volume:/srv/data:Z
+
+# Optional configuration override — uncomment to customize
+# expiration times, paste size limits, syntax highlighting, etc.
+#Volume=/srv/containers/privatebin/conf.php:/srv/cfg/conf.php:Z,ro
+
+# Read-only root filesystem (security best practice)
+ReadOnly=true
+PodmanArgs=--tmpfs /tmp:size=64m --tmpfs /run --tmpfs /var/log/nginx --tmpfs /var/lib/nginx
+
+# Web UI
+PublishPort=8080:8080
+
+# Health check
+HealthCmd=wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
