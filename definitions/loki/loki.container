@@ -1,0 +1,36 @@
+# loki.container
+# Quadlet container file for Grafana Loki — log aggregation system
+
+[Unit]
+Description=Grafana Loki Log Aggregation
+Documentation=https://grafana.com/docs/loki/latest/
+
+[Container]
+Image=docker.io/grafana/loki:3.7.1
+ContainerName=loki
+
+# Loki requires a config file at startup
+Volume=/srv/containers/loki/config/loki-config.yaml:/etc/loki/loki-config.yaml:Z,ro
+
+# Persistent storage for chunks, index, and rules
+Volume=loki-data.volume:/loki:Z
+
+# Override the default config path
+Exec=-config.file=/etc/loki/loki-config.yaml
+
+# HTTP API and push endpoint
+PublishPort=3100:3100
+
+# Health check
+HealthCmd=wget -qO- http://localhost:3100/ready || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
