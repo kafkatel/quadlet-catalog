@@ -1,0 +1,36 @@
+# grafana.container
+# Quadlet container file for Grafana — open-source observability dashboards
+
+[Unit]
+Description=Grafana Observability Dashboard
+Documentation=https://grafana.com/docs/grafana/latest/
+
+[Container]
+Image=docker.io/grafana/grafana:13.0.0
+ContainerName=grafana
+
+# Persistent data (dashboards, users, orgs, sqlite database)
+Volume=grafana-data.volume:/var/lib/grafana:Z
+
+# Optional provisioning — uncomment to declaratively configure
+# datasources, dashboards, and alerting from files on the host.
+#Volume=/srv/containers/grafana/provisioning:/etc/grafana/provisioning:Z,ro
+
+# Environment
+EnvironmentFile=./grafana.env
+
+# Web UI
+PublishPort=3000:3000
+
+# Health check
+HealthCmd=wget -qO- http://localhost:3000/api/health || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
