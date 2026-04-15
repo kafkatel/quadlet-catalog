@@ -1,0 +1,14 @@
+[Unit]
+Description=Pod for the Immich Photo Management Stack
+After=network-online.target immich-network-network.service
+Wants=network-online.target
+Requires=immich-network-network.service
+
+[Pod]
+Network=immich-network.network
+
+# Web UI and API
+PublishPort=2283:2283
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,43 @@
+# immich-server.container
+# Quadlet container file for the Immich server (API + web UI)
+
+[Unit]
+Description=Immich Photo Management Server
+Documentation=https://immich.app/docs/
+After=network-online.target immich-postgres.service immich-redis.service
+Wants=network-online.target
+Requires=immich-postgres.service immich-redis.service
+
+[Container]
+Image=ghcr.io/immich-app/immich-server:v2.6
+ContainerName=immich-server
+Pod=immich.pod
+
+EnvironmentFile=./immich.env
+
+# Photo/video library — the primary media storage
+Volume=/srv/containers/immich/library:/data:Z
+
+# Optional: external libraries (read-only import from existing directories)
+#Volume=/path/to/photos:/mnt/photos:z,ro
+
+# --- GPU hardware transcoding (optional) ---
+# NVIDIA (requires nvidia-container-toolkit):
+#AddDevice=nvidia.com/gpu=all
+#
+# Intel Quick Sync / AMD VA-API:
+#AddDevice=/dev/dri:/dev/dri
+
+# Health check
+HealthCmd=wget -qO- http://localhost:2283/api/server/ping || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

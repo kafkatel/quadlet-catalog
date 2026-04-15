@@ -1,0 +1,38 @@
+# immich-postgres.container
+# Quadlet container file for Immich PostgreSQL with pgvecto.rs/VectorChord
+
+[Unit]
+Description=PostgreSQL database for Immich
+After=network-online.target immich-network-network.service
+Wants=network-online.target
+Requires=immich-network-network.service
+
+[Container]
+Image=ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+ContainerName=immich-postgres
+Network=immich-network.network
+
+EnvironmentFile=./immich.env
+
+Environment=POSTGRES_USER=postgres
+Environment=POSTGRES_DB=immich
+Environment=POSTGRES_INITDB_ARGS=--data-checksums
+
+Volume=immich-pgdata.volume:/var/lib/postgresql/data:Z
+
+# Shared memory for PostgreSQL
+PodmanArgs=--shm-size=128m
+
+# Health check
+HealthCmd=pg_isready -U postgres -d immich
+HealthInterval=10s
+HealthRetries=5
+HealthTimeout=5s
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

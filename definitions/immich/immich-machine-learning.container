@@ -1,0 +1,46 @@
+# immich-machine-learning.container
+# Quadlet container file for Immich ML — facial recognition and smart search
+#
+# For GPU acceleration, change the image tag:
+#   NVIDIA:  v2.6-cuda
+#   AMD:     v2.6-rocm
+#   Intel:   v2.6-openvino
+
+[Unit]
+Description=Immich Machine Learning
+After=network-online.target immich-network-network.service
+Wants=network-online.target
+Requires=immich-network-network.service
+
+[Container]
+Image=ghcr.io/immich-app/immich-machine-learning:v2.6
+ContainerName=immich-machine-learning
+Network=immich-network.network
+
+# ML model cache — persists downloaded models across restarts
+Volume=immich-model-cache.volume:/cache:Z
+
+# --- GPU: NVIDIA CUDA (uncomment and change image tag to v2.6-cuda) ---
+#AddDevice=nvidia.com/gpu=all
+
+# --- GPU: AMD ROCm (uncomment and change image tag to v2.6-rocm) ---
+#AddDevice=/dev/kfd
+#AddDevice=/dev/dri
+#GroupAdd=39
+#GroupAdd=105
+#SecurityLabelDisable=true
+#PodmanArgs=--ipc=host
+
+# Health check
+HealthCmd=wget -qO- http://localhost:3003/ || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+HealthStartPeriod=60s
+
+[Service]
+Restart=always
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

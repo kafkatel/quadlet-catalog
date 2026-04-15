@@ -1,0 +1,26 @@
+# immich-redis.container
+# Quadlet container file for Immich Valkey (Redis-compatible) cache
+
+[Unit]
+Description=Valkey cache for Immich
+After=network-online.target immich-network-network.service
+Wants=network-online.target
+Requires=immich-network-network.service
+
+[Container]
+Image=docker.io/valkey/valkey:9
+ContainerName=immich-redis
+Network=immich-network.network
+
+# Health check
+HealthCmd=valkey-cli ping
+HealthInterval=10s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

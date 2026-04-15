@@ -1,0 +1,15 @@
+# immich-network.network
+# Quadlet network file for Immich backend communication
+
+[Unit]
+Description=Immich backend network
+After=network-online.target
+Wants=network-online.target
+
+[Network]
+NetworkName=immich-backend
+Driver=bridge
+Internal=false
+
+[Install]
+WantedBy=multi-user.target
