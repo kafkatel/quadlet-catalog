@@ -1,0 +1,33 @@
+# tautulli.container
+# Quadlet container file for Tautulli — Plex monitoring and analytics
+
+[Unit]
+Description=Tautulli Plex Analytics
+Documentation=https://tautulli.com/
+
+[Container]
+Image=lscr.io/linuxserver/tautulli:latest
+ContainerName=tautulli
+
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=Etc/UTC
+
+# Persistent configuration and database
+Volume=/srv/containers/tautulli/config:/config:Z
+
+# Web UI
+PublishPort=8181:8181
+
+# Health check
+HealthCmd=curl -sf http://localhost:8181/status || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

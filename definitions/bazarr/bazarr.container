@@ -1,0 +1,37 @@
+# bazarr.container
+# Quadlet container file for Bazarr — automatic subtitle management
+
+[Unit]
+Description=Bazarr Subtitle Manager
+Documentation=https://www.bazarr.media/
+
+[Container]
+Image=lscr.io/linuxserver/bazarr:latest
+ContainerName=bazarr
+
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=Etc/UTC
+
+# Persistent configuration
+Volume=/srv/containers/bazarr/config:/config:Z
+
+# Media library — same shared tree as Sonarr and Radarr so Bazarr
+# can drop subtitle files alongside media.
+Volume=/srv/containers/media:/data:z
+
+# Web UI
+PublishPort=6767:6767
+
+# Health check (Bazarr has no unauthenticated health endpoint)
+HealthCmd=curl -sf http://localhost:6767/ || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

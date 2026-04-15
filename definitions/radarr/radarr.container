@@ -1,0 +1,37 @@
+# radarr.container
+# Quadlet container file for Radarr — automated movie management
+
+[Unit]
+Description=Radarr Movie Manager
+Documentation=https://wiki.servarr.com/radarr
+
+[Container]
+Image=lscr.io/linuxserver/radarr:latest
+ContainerName=radarr
+
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=Etc/UTC
+
+# Persistent configuration
+Volume=/srv/containers/radarr/config:/config:Z
+
+# Media library — uses :z (shared) so Sonarr, Radarr, and Bazarr
+# can all access the same directory tree for hardlinks/atomic moves.
+Volume=/srv/containers/media:/data:z
+
+# Web UI
+PublishPort=7878:7878
+
+# Health check
+HealthCmd=curl -sf http://localhost:7878/ping || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

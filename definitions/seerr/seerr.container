@@ -1,0 +1,39 @@
+# seerr.container
+# Quadlet container file for Seerr — media request and discovery platform
+#
+# Seerr is the successor to Overseerr and Jellyseerr (merged project).
+# It supports both Plex and Jellyfin as media servers.
+
+[Unit]
+Description=Seerr Media Request Portal
+Documentation=https://docs.seerr.dev/
+
+[Container]
+Image=ghcr.io/seerr-team/seerr:latest
+ContainerName=seerr
+
+# Seerr does NOT use PUID/PGID (it's not a linuxserver.io image).
+# Runs as node user (UID 1000) internally.
+Environment=TZ=Etc/UTC
+
+# Persistent configuration
+Volume=/srv/containers/seerr/config:/app/config:Z
+
+# Seerr requires an init process
+PodmanArgs=--init
+
+# Web UI
+PublishPort=5055:5055
+
+# Health check
+HealthCmd=wget -qO- http://localhost:5055/api/v1/status || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

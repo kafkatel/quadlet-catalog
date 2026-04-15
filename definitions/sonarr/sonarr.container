@@ -1,0 +1,37 @@
+# sonarr.container
+# Quadlet container file for Sonarr — automated TV show management
+
+[Unit]
+Description=Sonarr TV Show Manager
+Documentation=https://wiki.servarr.com/sonarr
+
+[Container]
+Image=lscr.io/linuxserver/sonarr:latest
+ContainerName=sonarr
+
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=Etc/UTC
+
+# Persistent configuration
+Volume=/srv/containers/sonarr/config:/config:Z
+
+# Media library — uses :z (shared) so Sonarr, Radarr, and Bazarr
+# can all access the same directory tree for hardlinks/atomic moves.
+Volume=/srv/containers/media:/data:z
+
+# Web UI
+PublishPort=8989:8989
+
+# Health check
+HealthCmd=curl -sf http://localhost:8989/ping || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

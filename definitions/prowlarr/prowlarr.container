@@ -1,0 +1,33 @@
+# prowlarr.container
+# Quadlet container file for Prowlarr — indexer manager for the *arr stack
+
+[Unit]
+Description=Prowlarr Indexer Manager
+Documentation=https://wiki.servarr.com/prowlarr
+
+[Container]
+Image=lscr.io/linuxserver/prowlarr:latest
+ContainerName=prowlarr
+
+Environment=PUID=1000
+Environment=PGID=1000
+Environment=TZ=Etc/UTC
+
+# Persistent configuration
+Volume=/srv/containers/prowlarr/config:/config:Z
+
+# Web UI
+PublishPort=9696:9696
+
+# Health check
+HealthCmd=curl -sf http://localhost:9696/ping || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
