@@ -1,0 +1,26 @@
+# httpbin.container
+# Quadlet container file for go-httpbin — HTTP request/response testing
+
+[Unit]
+Description=go-httpbin HTTP Testing Service
+Documentation=https://github.com/mccutchen/go-httpbin
+
+[Container]
+Image=docker.io/mccutchen/go-httpbin:2.22.1
+ContainerName=httpbin
+
+# HTTP API
+PublishPort=8080:8080
+
+# Health check
+HealthCmd=wget -qO- http://localhost:8080/get || exit 1
+HealthInterval=15s
+HealthRetries=3
+HealthTimeout=5s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
