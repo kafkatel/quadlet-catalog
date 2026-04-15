@@ -1,0 +1,15 @@
+# wazuh-network.network
+# Quadlet network file for Wazuh backend communication
+
+[Unit]
+Description=Wazuh backend network
+After=network-online.target
+Wants=network-online.target
+
+[Network]
+NetworkName=wazuh-backend
+Driver=bridge
+Internal=false
+
+[Install]
+WantedBy=multi-user.target

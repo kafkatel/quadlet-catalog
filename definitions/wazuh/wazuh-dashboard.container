@@ -1,0 +1,48 @@
+# wazuh-dashboard.container
+# Quadlet container file for the Wazuh Dashboard — web UI
+
+[Unit]
+Description=Wazuh Dashboard
+After=network-online.target wazuh-indexer.service wazuh-manager.service
+Wants=network-online.target
+Requires=wazuh-indexer.service wazuh-manager.service
+
+[Container]
+Image=docker.io/wazuh/wazuh-dashboard:4.14.4
+ContainerName=wazuh-dashboard
+Pod=wazuh.pod
+
+# Environment — the dashboard init scripts read these to configure
+# opensearch_dashboards.yml. Do NOT set overlapping keys here AND in
+# the config file, or the dashboard will fail with "duplicated mapping key".
+EnvironmentFile=./wazuh.env
+
+Environment=WAZUH_API_URL=https://wazuh-manager
+Environment=API_USERNAME=wazuh-wui
+
+# Dashboard configuration — must be provided (image has no default).
+# Copy opensearch_dashboards.yml to /srv/containers/wazuh/config/ before deploying.
+Volume=/srv/containers/wazuh/config/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:Z
+
+# TLS certificates — mounted as individual files
+Volume=/srv/containers/wazuh/certs/wazuh-dashboard/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:Z,ro
+Volume=/srv/containers/wazuh/certs/wazuh-dashboard/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem:Z,ro
+Volume=/srv/containers/wazuh/certs/wazuh-dashboard/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:Z,ro
+
+# Persistent dashboard state
+Volume=/srv/containers/wazuh/dashboard-config:/usr/share/wazuh-dashboard/data/wazuh/config:Z
+Volume=/srv/containers/wazuh/dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom:Z
+
+# Health check
+HealthCmd=curl -ks https://localhost:5601/login || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthTimeout=10s
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,46 @@
+# wazuh-indexer.container
+# Quadlet container file for the Wazuh Indexer (OpenSearch-based)
+#
+# The image ships an opensearch.yml that reads TLS certificates from
+# /usr/share/wazuh-indexer/config/certs/ using filenames:
+#   indexer.pem, indexer-key.pem, root-ca.pem
+# The admin DN is pre-configured as CN=admin,OU=Wazuh,O=Wazuh,L=California,C=US.
+
+[Unit]
+Description=Wazuh Indexer (OpenSearch)
+After=network-online.target wazuh-network-network.service
+Wants=network-online.target
+Requires=wazuh-network-network.service
+
+[Container]
+Image=docker.io/wazuh/wazuh-indexer:4.14.4
+ContainerName=wazuh-indexer
+Network=wazuh-network.network
+
+# Persistent index data
+Volume=wazuh-indexer-data.volume:/var/lib/wazuh-indexer:Z
+
+# TLS certificates — generated before first start (see README.md).
+# Files must be named: indexer.pem, indexer-key.pem, root-ca.pem,
+# plus admin.pem and admin-key.pem for security initialization.
+Volume=/srv/containers/wazuh/certs/wazuh-indexer:/usr/share/wazuh-indexer/config/certs:Z,ro
+
+# JVM heap — adjust based on available RAM (recommend 50% of allocated memory)
+Environment=OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+
+# Health check
+HealthCmd=curl -ks -u admin:admin https://localhost:9200/_cluster/health | grep -q '"status"' || exit 1
+HealthInterval=30s
+HealthRetries=5
+HealthTimeout=10s
+HealthStartPeriod=60s
+
+Ulimit=nofile=65535:65535
+PodmanArgs=--ulimit memlock=-1:-1
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

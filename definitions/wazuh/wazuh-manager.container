@@ -1,0 +1,50 @@
+# wazuh-manager.container
+# Quadlet container file for the Wazuh Manager — SIEM event analysis engine
+
+[Unit]
+Description=Wazuh Manager
+Documentation=https://documentation.wazuh.com/current/
+After=network-online.target wazuh-indexer.service
+Wants=network-online.target
+Requires=wazuh-indexer.service
+
+[Container]
+Image=docker.io/wazuh/wazuh-manager:4.14.4
+ContainerName=wazuh-manager
+Pod=wazuh.pod
+
+# Environment
+EnvironmentFile=./wazuh.env
+
+# Persistent data
+Volume=wazuh-api-configuration.volume:/var/ossec/api/configuration:Z
+Volume=wazuh-etc.volume:/var/ossec/etc:Z
+Volume=wazuh-logs.volume:/var/ossec/logs:Z
+Volume=wazuh-queue.volume:/var/ossec/queue:Z
+Volume=wazuh-var-multigroups.volume:/var/ossec/var/multigroups:Z
+Volume=wazuh-integrations.volume:/var/ossec/integrations:Z
+Volume=wazuh-active-response.volume:/var/ossec/active-response/bin:Z
+Volume=wazuh-agentless.volume:/var/ossec/agentless:Z
+Volume=wazuh-wodles.volume:/var/ossec/wodles:Z
+Volume=wazuh-filebeat-etc.volume:/etc/filebeat:Z
+Volume=wazuh-filebeat-var.volume:/var/lib/filebeat:Z
+
+# TLS certificates — mounted as individual files to /etc/ssl/
+# matching what the manager's filebeat configuration expects.
+Volume=/srv/containers/wazuh/certs/wazuh-manager/root-ca.pem:/etc/ssl/root-ca.pem:Z,ro
+Volume=/srv/containers/wazuh/certs/wazuh-manager/filebeat.pem:/etc/ssl/filebeat.pem:Z,ro
+Volume=/srv/containers/wazuh/certs/wazuh-manager/filebeat.key:/etc/ssl/filebeat.key:Z,ro
+
+# Health check
+HealthCmd=curl -ks https://localhost:55000 || exit 1
+HealthInterval=15s
+HealthRetries=5
+HealthTimeout=5s
+HealthStartPeriod=60s
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

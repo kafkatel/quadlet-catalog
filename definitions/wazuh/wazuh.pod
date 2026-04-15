@@ -1,0 +1,23 @@
+[Unit]
+Description=Pod for the Wazuh SIEM Stack
+After=network-online.target wazuh-network-network.service
+Wants=network-online.target
+Requires=wazuh-network-network.service
+
+[Pod]
+Network=wazuh-network.network
+
+# Dashboard web UI (HTTPS).
+# Change to 443:5601 for standard HTTPS (requires root or
+# net.ipv4.ip_unprivileged_port_start=443 in sysctl).
+PublishPort=5601:5601
+
+# Wazuh agent communication
+PublishPort=1514:1514
+PublishPort=1515:1515
+
+# Wazuh REST API
+PublishPort=55000:55000
+
+[Install]
+WantedBy=default.target
